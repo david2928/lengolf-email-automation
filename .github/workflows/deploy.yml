@@ -42,6 +42,14 @@ jobs:
       uses: google-github-actions/setup-gcloud@v1
       with:
         project_id: ${{ env.PROJECT_ID }}
+
+    - name: Verify Service Account Permissions
+      run: |
+        echo "Verifying service account permissions..."
+        gcloud projects get-iam-policy ${{ env.PROJECT_ID }} \
+          --flatten="bindings[].members" \
+          --format='table(bindings.role)' \
+          --filter="bindings.members:email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
         
     - name: Deploy to Cloud Run
       id: deploy
