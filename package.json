@@ -1,0 +1,26 @@
+{
+  "name": "lengolf-email-automation",
+  "version": "1.0.0",
+  "description": "LenGolf Email Automation System",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest",
+    "deploy": "node scripts/setup-env.js && gcloud run deploy email-processor --source . --project lengolf-email-automation",
+    "setup-env": "node scripts/setup-env.js"
+  },
+  "dependencies": {
+    "@google-cloud/local-auth": "^2.1.1",
+    "@google-cloud/secret-manager": "^5.0.0",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "express": "^4.21.2",
+    "google-auth-library": "^9.4.1",
+    "googleapis": "^129.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2"
+  }
+}
