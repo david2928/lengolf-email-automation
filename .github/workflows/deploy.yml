@@ -37,19 +37,31 @@ jobs:
       uses: google-github-actions/auth@v1
       with:
         credentials_json: '${{ secrets.GCP_SA_KEY }}'
+        service_account: email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
       with:
         project_id: ${{ env.PROJECT_ID }}
 
-    - name: Verify Service Account Permissions
+    - name: Grant required roles to service account
       run: |
-        echo "Verifying service account permissions..."
-        gcloud projects get-iam-policy ${{ env.PROJECT_ID }} \
-          --flatten="bindings[].members" \
-          --format='table(bindings.role)' \
-          --filter="bindings.members:email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
+        echo "Granting required roles to service account..."
+        gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
+          --member="serviceAccount:email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
+          --role="roles/run.admin"
+        
+        gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
+          --member="serviceAccount:email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
+          --role="roles/run.invoker"
+
+        gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
+          --member="serviceAccount:email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
+          --role="roles/storage.admin"
+
+        gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
+          --member="serviceAccount:email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
+          --role="roles/iam.serviceAccountUser"
         
     - name: Deploy to Cloud Run
       id: deploy
