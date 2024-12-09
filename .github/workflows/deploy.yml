@@ -85,20 +85,3 @@ jobs:
 
       - name: Show Service URL
         run: echo "Service URL ${{ steps.deploy.outputs.url }}"
-
-      - name: Setup Cloud Scheduler
-        run: |
-          echo "Creating/Updating Cloud Scheduler job..."
-          # Delete existing job if it exists, ignore errors
-          gcloud scheduler jobs delete process-emails \
-            --location=${{ env.REGION }} \
-            --quiet || true
-
-          # Create the job in asia-southeast1
-          gcloud scheduler jobs create http process-emails \
-            --schedule="*/10 * * * *" \
-            --http-method=POST \
-            --uri="${{ steps.deploy.outputs.url }}/process" \
-            --oidc-service-account-email="scheduler-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
-            --location=${{ env.REGION }} \
-            --project=${{ env.PROJECT_ID }}
