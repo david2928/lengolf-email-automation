@@ -11,6 +11,8 @@ env:
   PROJECT_ID: lengolf-email-automation
   REGION: asia-southeast1
   SERVICE_NAME: email-processor
+  DEPLOYER_SA: github-actions-deployer@lengolf-email-automation.iam.gserviceaccount.com
+  PROCESSOR_SA: email-processor-sa@lengolf-email-automation.iam.gserviceaccount.com
 
 jobs:
   deploy:
@@ -37,31 +39,11 @@ jobs:
       uses: google-github-actions/auth@v1
       with:
         credentials_json: '${{ secrets.GCP_SA_KEY }}'
-        service_account: email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
       with:
         project_id: ${{ env.PROJECT_ID }}
-
-    - name: Grant required roles to service account
-      run: |
-        echo "Granting required roles to service account..."
-        gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
-          --member="serviceAccount:email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
-          --role="roles/run.admin"
-        
-        gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
-          --member="serviceAccount:email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
-          --role="roles/run.invoker"
-
-        gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
-          --member="serviceAccount:email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
-          --role="roles/storage.admin"
-
-        gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
-          --member="serviceAccount:email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
-          --role="roles/iam.serviceAccountUser"
         
     - name: Deploy to Cloud Run
       id: deploy
@@ -91,7 +73,7 @@ jobs:
           --min-instances=0
           --max-instances=2
           --allow-unauthenticated
-          --service-account=email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+          --service-account=${{ env.PROCESSOR_SA }}
           --timeout=540s
 
     - name: Show Service URL
