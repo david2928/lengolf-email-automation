@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "lengolf-email-automation",
+  "private_key_id": "8ec8af19d184e134fb33a5435ab01d4ad85d01f1",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDEbpihpuOk4JRH\n8XbtjtU2PfSHSE63z13v5I5xm+atPYBsofS22J4fJlvPBLSQ0gjfTgXNAoGrh3LX\n679MkpQjMZewSsK5jX6u3ecnyuTAyGgCSfIFneHLSJTQ1ibDvHfkCS8LqMvav5PZ\n0mco2KCrwkuP4cv/l9TTpwN9uBPL9Qq4t/WTtBZ8jsifIl6ZhX/wig/9RjM1gGxw\naVaNO++o9Cn+9XdPcIdhwl5ahRgBkhG8oQthc1nE9sWwoZ5loVr7Gwl5/7I5PWpZ\nlxs6CrYK2oNPa79WZ6dJ9SafzaSr5NM/nZ48TTvLpv2z6rQt8Kwr17crLwxXnXQE\nBgxXCB3LAgMBAAECggEAAdfj2Mh/JGHzIkWyzwHjIFIuhEJ6cqEgiYrEh25mGMQV\n+279o+Wefj5W6DdsFlvSN3488bKPUvO/cSVGM0rA1x+1A7N/5kvcn3l3nNj7ko+O\n4k6dVc4oe0bgFqGb1YRkP6CSb3KTDydzFL0zuJ9nypTVLrF4v5pGJgJQNxLOJMDQ\nssp4YNyjBPY7Exir5xCJXj1BkMGacAqqTohxPKrrKmmcaCHTvxlA8n2ImhYs/fjb\nCqdyD/2EC1YlvR+9q1kLRDo6Z/FFrWSKYQb2ms9S1NAVuDCJ7U7nnhzfLJSjb4vS\nVe3+ctn59ivGvy9wjInv9kXyBso9UueTUa2CqRT6UQKBgQDzqJ4zsWugpUvUZoub\n9nSy2brubjauw376q6nC25m3s6Vi1PFYVYgjqf9HWNzkW+F8tSW2wEkfGMldmNG1\nO5ygsUtPsrXC0XOnpudny0fBvlkWShHkwztLi4vKLOKKvzbvXGxYDZcU/hhqjGaW\nT0bRZUsWca3yGn2EuyictIacAwKBgQDOYZ4OwPnWKf5Bgl9l67p0hNuzPqb0kS6r\n9mNDT1TdE18WXElFTZN0Dvn/cA78ORv4uDCFkRs6u+pbfgMyY5TqC5UvglLVvJ1Q\n0piLJly0I1SqGM7GPej0gQSBuVgnlZLh6OIG+atoGC00Q1Pw7DKYgKf56hiS5Otk\nkIhg0bGgmQKBgBJQdEOybEKQ6hg29PtuFOt0jiZpxlZwf1TcHlB1LSKvsBizpMhc\n9XSozHVSapgHh/VVsFYCMfzSYiBU4j5bErTJXr3I0vynvae2VeJpVyVq50tTmfC1\n8/kDriguI4EGSlzHd6VOsDJ1vuQTVYqqvsnycShotwhhkVmur6jHsO59AoGAV9sw\niQFXmfcYeNTCPcYjAtVIHb8PHc/sOWJTEWVlMBO+B+vTeUA0BFUX0cjnaDH7mV73\nsPR7zf4PH1G+lKXVz+iMYsQs9TYtFioArEPxdPIRabPT2oqib+u4emznfTpsY+Va\nyzNf55lbLQN4aXhzdX5Xg8lHGsl+97mbhPPflQkCgYA7GBgTl7pXJqMcCv91mYcX\nP8j56YrsgRS6V48H84vkJ+yFwTNAl4/TaizFj9QjQ+Kd9jdcaoM0aJR8tEUAhnWQ\nNwkw0MwafJTPIqOBrPxf20PjTPSZHO5nuYAdxrfW60XTtBIxMhdH7JlFP8JELKjz\ncqVNoVaEe1T+t6gwqZLgLw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "github-actions-deployer@lengolf-email-automation.iam.gserviceaccount.com",
+  "client_id": "104738198026175050330",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/github-actions-deployer%40lengolf-email-automation.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
