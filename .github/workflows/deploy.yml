@@ -102,4 +102,5 @@ jobs:
           --uri="${{ steps.deploy.outputs.url }}/process" \
           --oidc-service-account-email="scheduler-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
           --location=${{ env.REGION }} \
-          --project=${{ env.PROJECT_ID }}
+          --project=${{ env.PROJECT_ID }} 
+          
