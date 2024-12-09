@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - master    # Adding master branch
+      - master
   workflow_dispatch:
 
 env:
@@ -16,23 +16,32 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: '18'
+        cache: 'npm'
         
     - name: Install dependencies
       run: npm ci
         
+    - name: Google Auth
+      id: auth
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
     - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v0
+      uses: google-github-actions/setup-gcloud@v1
       with:
         project_id: ${{ env.PROJECT_ID }}
-        service_account_key: ${{ secrets.GCP_SA_KEY }}
-        export_default_credentials: true
 
     - name: Create env.yaml
       env:
@@ -53,39 +62,35 @@ jobs:
       run: node scripts/setup-env.js
         
     - name: Deploy to Cloud Run
-      run: |
-        gcloud run deploy ${{ env.SERVICE_NAME }} \
-          --source . \
-          --project ${{ env.PROJECT_ID }} \
-          --region ${{ env.REGION }} \
-          --env-vars-file env.yaml \
-          --platform managed \
-          --allow-unauthenticated \
-          --memory 512Mi \
-          --cpu 1 \
-          --min-instances 0 \
-          --max-instances 2 \
-          --service-account email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
-          --timeout 540s
+      id: deploy
+      uses: google-github-actions/deploy-cloudrun@v1
+      with:
+        service: ${{ env.SERVICE_NAME }}
+        region: ${{ env.REGION }}
+        source: .
+        flags: |
+          --memory=512Mi
+          --cpu=1
+          --min-instances=0
+          --max-instances=2
+          --allow-unauthenticated
+          --service-account=email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+          --timeout=540s
+          --env-vars-file=env.yaml
 
     - name: Create/Update Cloud Scheduler
       run: |
-        SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
-          --platform managed \
-          --region ${{ env.REGION }} \
-          --format 'value(status.url)')
-
         gcloud scheduler jobs create http process-emails \
           --schedule="*/10 * * * *" \
           --http-method=POST \
-          --uri="${SERVICE_URL}/process" \
+          --uri="${{ steps.deploy.outputs.url }}/process" \
           --oidc-service-account-email="scheduler-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
           --location=${{ env.REGION }} \
           --project=${{ env.PROJECT_ID }} \
           || gcloud scheduler jobs update http process-emails \
              --schedule="*/10 * * * *" \
              --http-method=POST \
-             --uri="${SERVICE_URL}/process" \
+             --uri="${{ steps.deploy.outputs.url }}/process" \
              --oidc-service-account-email="scheduler-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
              --location=${{ env.REGION }} \
              --project=${{ env.PROJECT_ID }}
