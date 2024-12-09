@@ -11,7 +11,6 @@ env:
   PROJECT_ID: lengolf-email-automation
   REGION: asia-southeast1
   SERVICE_NAME: email-processor
-  DEPLOYER_SA: github-actions-deployer@lengolf-email-automation.iam.gserviceaccount.com
   PROCESSOR_SA: email-processor-sa@lengolf-email-automation.iam.gserviceaccount.com
 
 jobs:
@@ -102,5 +101,4 @@ jobs:
           --uri="${{ steps.deploy.outputs.url }}/process" \
           --oidc-service-account-email="scheduler-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
           --location=${{ env.REGION }} \
-          --project=${{ env.PROJECT_ID }} 
-          
+          --project=${{ env.PROJECT_ID }}
