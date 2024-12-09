@@ -11,6 +11,11 @@ env:
   PROJECT_ID: lengolf-email-automation
   REGION: asia-southeast1
   SERVICE_NAME: email-processor
+  LABEL_CLASSPASS: "Web Leads (ClassPass)"
+  LABEL_WEB: "Web Leads"
+  LABEL_RESOS: "Web Leads (ResOS)"
+  LABEL_FACEBOOK: "Web Leads (Facebook)"
+  LABEL_COMPLETED: "Web Leads - completed"
 
 jobs:
   deploy:
@@ -54,12 +59,21 @@ jobs:
         LINE_TOKEN_FACEBOOK: ${{ secrets.LINE_TOKEN_FACEBOOK }}
         LINE_TOKEN_B2B: ${{ secrets.LINE_TOKEN_B2B }}
         LINE_TOKEN_B2C: ${{ secrets.LINE_TOKEN_B2C }}
-        LABEL_CLASSPASS: "Web Leads (ClassPass)"
-        LABEL_WEB: "Web Leads"
-        LABEL_RESOS: "Web Leads (ResOS)"
-        LABEL_FACEBOOK: "Web Leads (Facebook)"
-        LABEL_COMPLETED: "Web Leads - completed"
-      run: node scripts/setup-env.js
+        LABEL_CLASSPASS: ${{ env.LABEL_CLASSPASS }}
+        LABEL_WEB: ${{ env.LABEL_WEB }}
+        LABEL_RESOS: ${{ env.LABEL_RESOS }}
+        LABEL_FACEBOOK: ${{ env.LABEL_FACEBOOK }}
+        LABEL_COMPLETED: ${{ env.LABEL_COMPLETED }}
+      run: |
+        echo "Creating env.yaml with following variables:"
+        echo "PROJECT_ID: $PROJECT_ID"
+        echo "REGION: $REGION"
+        echo "FACEBOOK_SHEET_ID: [secret]"
+        echo "FACEBOOK_B2B_SHEET_ID: [secret]"
+        echo "LINE tokens: [secret]"
+        echo "Labels are set from env variables"
+        node scripts/setup-env.js
+        echo "env.yaml created successfully"
         
     - name: Deploy to Cloud Run
       id: deploy
@@ -68,6 +82,7 @@ jobs:
         service: ${{ env.SERVICE_NAME }}
         region: ${{ env.REGION }}
         source: .
+        env_vars_file: env.yaml
         flags: |
           --memory=512Mi
           --cpu=1
@@ -76,7 +91,6 @@ jobs:
           --allow-unauthenticated
           --service-account=email-processor-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
           --timeout=540s
-          --env-vars-file=env.yaml
 
     - name: Create/Update Cloud Scheduler
       run: |
