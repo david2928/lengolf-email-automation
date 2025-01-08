@@ -35,7 +35,7 @@ steps:
       - '--max-instances'
       - '2'
       - '--set-env-vars'
-      - 'PROJECT_ID=${PROJECT_ID},REGION=${_REGION}'
+      - 'PROJECT_ID=${PROJECT_ID},REGION=${_REGION},META_ACCESS_TOKEN=${_META_ACCESS_TOKEN},META_PAGE_ID=${_META_PAGE_ID},META_B2B_FORM_ID=${_META_B2B_FORM_ID},META_B2C_FORM_ID=${_META_B2C_FORM_ID}'
       - '--service-account'
       - 'email-processor-sa@${PROJECT_ID}.iam.gserviceaccount.com'
       - '--timeout'
@@ -46,3 +46,7 @@ images:
 
 substitutions:
   _REGION: asia-southeast1
+  _META_ACCESS_TOKEN: # Set this in Cloud Build trigger
+  _META_PAGE_ID: # Set this in Cloud Build trigger
+  _META_B2B_FORM_ID: # Set this in Cloud Build trigger
+  _META_B2C_FORM_ID: # Set this in Cloud Build trigger

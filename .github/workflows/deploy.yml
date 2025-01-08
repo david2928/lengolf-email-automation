@@ -74,6 +74,10 @@ jobs:
             LABEL_RESOS=Web Leads (ResOS)
             LABEL_FACEBOOK=Web Leads (Facebook)
             LABEL_COMPLETED=Web Leads - completed
+            META_ACCESS_TOKEN=${{ secrets.META_ACCESS_TOKEN }}
+            META_PAGE_ID=${{ secrets.META_PAGE_ID }}
+            META_B2B_FORM_ID=${{ secrets.META_B2B_FORM_ID }}
+            META_B2C_FORM_ID=${{ secrets.META_B2C_FORM_ID }}
           flags: |
             --memory=512Mi
             --cpu=1
