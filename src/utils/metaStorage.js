@@ -1,39 +1,35 @@
-const fs = require('fs').promises;
-const path = require('path');
+const { supabase } = require('../lib/supabase');
 
 class MetaStorage {
-    constructor() {
-        this.storagePath = path.join(process.cwd(), 'data', 'processed_leads.json');
-    }
-
     async initialize() {
-        try {
-            await fs.mkdir(path.dirname(this.storagePath), { recursive: true });
-            try {
-                await fs.access(this.storagePath);
-            } catch {
-                await fs.writeFile(this.storagePath, JSON.stringify({
-                    b2b: { leads: [], lastProcessed: '' },
-                    b2c: { leads: [], lastProcessed: '' }
-                }));
-            }
-        } catch (error) {
-            console.error('Error initializing storage:', error);
-            throw error;
-        }
+        // No initialization needed for Supabase table
+        return true;
     }
 
     async getStoredData() {
         try {
-            const data = await fs.readFile(this.storagePath, 'utf8');
-            const parsed = JSON.parse(data);
-            if (!parsed.b2b || !parsed.b2c) {
-                return {
-                    b2b: { leads: [], lastProcessed: '' },
-                    b2c: { leads: [], lastProcessed: '' }
-                };
-            }
-            return parsed;
+            const { data: b2bLeads, error: b2bError } = await supabase
+                .from('processed_leads')
+                .select('lead_id')
+                .eq('lead_type', 'b2b');
+
+            const { data: b2cLeads, error: b2cError } = await supabase
+                .from('processed_leads')
+                .select('lead_id')
+                .eq('lead_type', 'b2c');
+
+            if (b2bError || b2cError) throw b2bError || b2cError;
+
+            return {
+                b2b: { 
+                    leads: b2bLeads.map(l => l.lead_id),
+                    lastProcessed: ''
+                },
+                b2c: { 
+                    leads: b2cLeads.map(l => l.lead_id),
+                    lastProcessed: ''
+                }
+            };
         } catch (error) {
             console.error('Error reading stored data:', error);
             return {
@@ -43,14 +39,16 @@ class MetaStorage {
         }
     }
 
-    async markLeadAsProcessed(leadId, type, timestamp = new Date().toISOString()) {
+    async markLeadAsProcessed(leadId, type) {
         try {
-            const data = await this.getStoredData();
-            if (!data[type].leads.includes(leadId)) {
-                data[type].leads.push(leadId);
-                data[type].lastProcessed = timestamp;
-                await fs.writeFile(this.storagePath, JSON.stringify(data, null, 2));
-            }
+            const { error } = await supabase
+                .from('processed_leads')
+                .insert([{ 
+                    lead_id: leadId,
+                    lead_type: type
+                }]);
+
+            if (error) throw error;
         } catch (error) {
             console.error('Error marking lead as processed:', error);
             throw error;
