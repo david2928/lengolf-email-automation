@@ -62,7 +62,8 @@ jobs:
           env_vars: |
             PROJECT_ID=${{ env.PROJECT_ID }}
             REGION=${{ env.REGION }}
-            PROCESSED_LEADS_PATH=/data/processed_leads.json
+            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
             FACEBOOK_SHEET_ID=${{ secrets.FACEBOOK_SHEET_ID }}
             FACEBOOK_B2B_SHEET_ID=${{ secrets.FACEBOOK_B2B_SHEET_ID }}
             LINE_TOKEN_CLASSPASS=${{ secrets.LINE_TOKEN_CLASSPASS }}
