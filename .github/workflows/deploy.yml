@@ -5,17 +5,6 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-env:
-  PROJECT_ID: lengolf-email-automation
-  REGION: asia-southeast1
-  SERVICE_NAME: email-processor
-  PROCESSOR_SA: email-processor-sa@lengolf-email-automation.iam.gserviceaccount.com
-  LABEL_CLASSPASS: 'Web Leads (ClassPass)'
-  LABEL_WEB: 'Web Leads'
-  LABEL_RESOS: 'Web Leads (ResOS)'
-  LABEL_FACEBOOK: 'Web Leads (Facebook)'
-  LABEL_COMPLETED: 'Web Leads - completed'
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -41,7 +30,7 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
-          project_id: ${{ env.PROJECT_ID }}
+          project_id: lengolf-email-automation
 
       - name: Enable APIs
         run: |
@@ -50,37 +39,17 @@ jobs:
           sleep 30
 
       - name: Deploy to Cloud Run
-        uses: google-github-actions/deploy-cloudrun@v1
-        with:
-          service: ${{ env.SERVICE_NAME }}
-          region: ${{ env.REGION }}
-          source: .
-          env_vars: |
-            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-            PROJECT_ID=${{ env.PROJECT_ID }}
-            REGION=${{ env.REGION }}
-            FACEBOOK_SHEET_ID=${{ secrets.FACEBOOK_SHEET_ID }}
-            FACEBOOK_B2B_SHEET_ID=${{ secrets.FACEBOOK_B2B_SHEET_ID }}
-            LINE_TOKEN_CLASSPASS=${{ secrets.LINE_TOKEN_CLASSPASS }}
-            LINE_TOKEN_WEBRESOS=${{ secrets.LINE_TOKEN_WEBRESOS }}
-            LINE_TOKEN_FACEBOOK=${{ secrets.LINE_TOKEN_FACEBOOK }}
-            LINE_TOKEN_B2B=${{ secrets.LINE_TOKEN_B2B }}
-            LINE_TOKEN_B2C=${{ secrets.LINE_TOKEN_B2C }}
-            META_ACCESS_TOKEN=${{ secrets.META_ACCESS_TOKEN }}
-            META_PAGE_ID=${{ secrets.META_PAGE_ID }}
-            META_B2B_FORM_ID=${{ secrets.META_B2B_FORM_ID }}
-            META_B2C_FORM_ID=${{ secrets.META_B2C_FORM_ID }}
-            LABEL_CLASSPASS=${{ env.LABEL_CLASSPASS }}
-            LABEL_WEB=${{ env.LABEL_WEB }}
-            LABEL_RESOS=${{ env.LABEL_RESOS }}
-            LABEL_FACEBOOK=${{ env.LABEL_FACEBOOK }}
-            LABEL_COMPLETED=${{ env.LABEL_COMPLETED }}
-          flags: |
-            --memory=512Mi
-            --cpu=1
-            --min-instances=0
-            --max-instances=2
-            --allow-unauthenticated
-            --service-account=${{ env.PROCESSOR_SA }}
-            --timeout=540s
+        run: |
+          gcloud run deploy email-processor \
+            --source . \
+            --platform managed \
+            --region asia-southeast1 \
+            --memory 512Mi \
+            --cpu 1 \
+            --min-instances 0 \
+            --max-instances 2 \
+            --allow-unauthenticated \
+            --service-account email-processor-sa@lengolf-email-automation.iam.gserviceaccount.com \
+            --timeout 540s \
+            --set-env-vars "^;^SUPABASE_URL=${{ secrets.SUPABASE_URL }};SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }};FACEBOOK_SHEET_ID=${{ secrets.FACEBOOK_SHEET_ID }};FACEBOOK_B2B_SHEET_ID=${{ secrets.FACEBOOK_B2B_SHEET_ID }};LINE_TOKEN_CLASSPASS=${{ secrets.LINE_TOKEN_CLASSPASS }};LINE_TOKEN_WEBRESOS=${{ secrets.LINE_TOKEN_WEBRESOS }};LINE_TOKEN_FACEBOOK=${{ secrets.LINE_TOKEN_FACEBOOK }};LINE_TOKEN_B2B=${{ secrets.LINE_TOKEN_B2B }};LINE_TOKEN_B2C=${{ secrets.LINE_TOKEN_B2C }};META_ACCESS_TOKEN=${{ secrets.META_ACCESS_TOKEN }};META_PAGE_ID=${{ secrets.META_PAGE_ID }};META_B2B_FORM_ID=${{ secrets.META_B2B_FORM_ID }};META_B2C_FORM_ID=${{ secrets.META_B2C_FORM_ID }};LABEL_CLASSPASS=Web Leads (ClassPass);LABEL_WEB=Web Leads;LABEL_RESOS=Web Leads (ResOS);LABEL_FACEBOOK=Web Leads (Facebook);LABEL_COMPLETED=Web Leads - completed" \
+            --quiet
