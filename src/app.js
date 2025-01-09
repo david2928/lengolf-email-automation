@@ -73,27 +73,33 @@ async function processLeads() {
     }
 }
 
+let processingLoop;
 async function startProcessing() {
     let consecutiveFailures = 0;
     const MAX_CONSECUTIVE_FAILURES = 5;
 
     while (true) {
-        console.log('Starting processing cycle at:', new Date().toISOString());
-        const success = await processLeads();
-        
-        if (success) {
-            consecutiveFailures = 0;
-        } else {
-            consecutiveFailures++;
-            console.warn(`Consecutive failures: ${consecutiveFailures}`);
+        try {
+            console.log('Starting processing cycle at:', new Date().toISOString());
+            const success = await processLeads();
             
-            if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-                throw new Error('Too many consecutive failures');
+            if (success) {
+                consecutiveFailures = 0;
+            } else {
+                consecutiveFailures++;
+                console.warn(`Consecutive failures: ${consecutiveFailures}`);
+                
+                if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+                    throw new Error('Too many consecutive failures');
+                }
             }
-        }
 
-        console.log('Waiting for next cycle...');
-        await sleep(PROCESSING_INTERVAL);
+            console.log('Waiting for next cycle...');
+            await sleep(PROCESSING_INTERVAL);
+        } catch (error) {
+            console.error('Error in processing loop:', error);
+            await sleep(RETRY_DELAY); // Wait before retrying
+        }
     }
 }
 
@@ -102,22 +108,41 @@ app.get('/', (req, res) => {
     res.status(200).send('OK');
 });
 
-// Start server and processing
-app.listen(port, () => {
+// Start server
+const server = app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
-    startProcessing().catch(error => {
+    // Start processing after server is running
+    processingLoop = startProcessing().catch(error => {
         console.error('Fatal error in processing:', error);
         process.exit(1);
     });
 });
 
+// Graceful shutdown
+async function shutdown() {
+    console.log('Shutting down gracefully...');
+    server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
+
+    // If server hasn't finished in 10 seconds, shut down forcefully
+    setTimeout(() => {
+        console.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+    }, 10000);
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+
 // Handle uncaught errors
 process.on('uncaughtException', (error) => {
     console.error('Uncaught exception:', error);
-    process.exit(1);
+    shutdown();
 });
 
 process.on('unhandledRejection', (error) => {
     console.error('Unhandled rejection:', error);
-    process.exit(1);
+    shutdown();
 });
