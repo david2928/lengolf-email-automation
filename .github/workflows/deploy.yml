@@ -36,6 +36,7 @@ jobs:
         run: |
           gcloud services enable run.googleapis.com
           gcloud services enable cloudscheduler.googleapis.com
+          gcloud services enable secretmanager.googleapis.com
           sleep 30
 
       - name: Deploy to Cloud Run
@@ -51,5 +52,5 @@ jobs:
             --allow-unauthenticated \
             --service-account email-processor-sa@lengolf-email-automation.iam.gserviceaccount.com \
             --timeout 540s \
-            --set-env-vars "^;^SUPABASE_URL=${{ secrets.SUPABASE_URL }};SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }};FACEBOOK_SHEET_ID=${{ secrets.FACEBOOK_SHEET_ID }};FACEBOOK_B2B_SHEET_ID=${{ secrets.FACEBOOK_B2B_SHEET_ID }};LINE_TOKEN_CLASSPASS=${{ secrets.LINE_TOKEN_CLASSPASS }};LINE_TOKEN_WEBRESOS=${{ secrets.LINE_TOKEN_WEBRESOS }};LINE_TOKEN_FACEBOOK=${{ secrets.LINE_TOKEN_FACEBOOK }};LINE_TOKEN_B2B=${{ secrets.LINE_TOKEN_B2B }};LINE_TOKEN_B2C=${{ secrets.LINE_TOKEN_B2C }};META_ACCESS_TOKEN=${{ secrets.META_ACCESS_TOKEN }};META_PAGE_ID=${{ secrets.META_PAGE_ID }};META_B2B_FORM_ID=${{ secrets.META_B2B_FORM_ID }};META_B2C_FORM_ID=${{ secrets.META_B2C_FORM_ID }};LABEL_CLASSPASS=Web Leads (ClassPass);LABEL_WEB=Web Leads;LABEL_RESOS=Web Leads (ResOS);LABEL_FACEBOOK=Web Leads (Facebook);LABEL_COMPLETED=Web Leads - completed" \
+            --set-env-vars "GOOGLE_CLOUD_PROJECT=lengolf-email-automation,PROJECT_ID=lengolf-email-automation,^;^SUPABASE_URL=${{ secrets.SUPABASE_URL }};SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }};FACEBOOK_SHEET_ID=${{ secrets.FACEBOOK_SHEET_ID }};FACEBOOK_B2B_SHEET_ID=${{ secrets.FACEBOOK_B2B_SHEET_ID }};LINE_TOKEN_CLASSPASS=${{ secrets.LINE_TOKEN_CLASSPASS }};LINE_TOKEN_WEBRESOS=${{ secrets.LINE_TOKEN_WEBRESOS }};LINE_TOKEN_FACEBOOK=${{ secrets.LINE_TOKEN_FACEBOOK }};LINE_TOKEN_B2B=${{ secrets.LINE_TOKEN_B2B }};LINE_TOKEN_B2C=${{ secrets.LINE_TOKEN_B2C }};META_ACCESS_TOKEN=${{ secrets.META_ACCESS_TOKEN }};META_PAGE_ID=${{ secrets.META_PAGE_ID }};META_B2B_FORM_ID=${{ secrets.META_B2B_FORM_ID }};META_B2C_FORM_ID=${{ secrets.META_B2C_FORM_ID }};LABEL_CLASSPASS=Web Leads (ClassPass);LABEL_WEB=Web Leads;LABEL_RESOS=Web Leads (ResOS);LABEL_FACEBOOK=Web Leads (Facebook);LABEL_COMPLETED=Web Leads - completed" \
             --quiet

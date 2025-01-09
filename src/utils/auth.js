@@ -12,15 +12,26 @@ const SCOPES = [
 ];
 
 async function accessSecret(secretName) {
-    const client = new SecretManagerServiceClient();
-    const projectId = process.env.PROJECT_ID;
-    const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
-    
     try {
+        const client = new SecretManagerServiceClient();
+        const projectId = process.env.GOOGLE_CLOUD_PROJECT || process.env.PROJECT_ID;
+        
+        if (!projectId) {
+            throw new Error('PROJECT_ID environment variable is not set');
+        }
+
+        console.log(`Accessing secret ${secretName} in project ${projectId}`);
+        const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
+        
         const [version] = await client.accessSecretVersion({ name });
         return version.payload.data.toString('utf8');
     } catch (error) {
-        console.error(`Error accessing secret ${secretName}:`, error);
+        console.error(`Error accessing secret ${secretName}:`, {
+            error: error.message,
+            details: error.details,
+            code: error.code,
+            projectId: process.env.GOOGLE_CLOUD_PROJECT || process.env.PROJECT_ID
+        });
         throw error;
     }
 }
@@ -42,11 +53,13 @@ async function getAuth() {
 
     try {
         if (isCloudRun) {
+            console.log('Running in Cloud Run, using Secret Manager');
             // Get credentials and token from Secret Manager
             const [credentials, token] = await Promise.all([
                 accessSecret('gmail-credentials'),
                 accessSecret('gmail-token')
             ]);
+            
             const credentialsData = JSON.parse(credentials);
             const { client_secret, client_id, redirect_uris } = credentialsData.installed || credentialsData.web;
             const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
@@ -63,6 +76,7 @@ async function getAuth() {
                 throw new Error('Token validation failed');
             }
         } else {
+            console.log('Running locally, using credential files');
             // Local development - use OAuth credentials from files
             const credPath = path.join(process.cwd(), 'credentials.json');
             const content = fs.readFileSync(credPath);
@@ -93,7 +107,12 @@ async function getAuth() {
             return oauth2Client;
         }
     } catch (error) {
-        console.error('Auth error:', error);
+        console.error('Auth error:', {
+            error: error.message,
+            stack: error.stack,
+            isCloudRun: process.env.K_SERVICE !== undefined,
+            projectId: process.env.GOOGLE_CLOUD_PROJECT || process.env.PROJECT_ID
+        });
         throw error;
     }
 }
