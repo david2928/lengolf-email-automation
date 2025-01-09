@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm install --production
 
 # Copy source code
-COPY src/ ./src/
+COPY . .
 
 # Set environment variables
 ENV NODE_ENV=production \
@@ -21,4 +21,4 @@ ENV NODE_ENV=production \
 EXPOSE 8080
 
 # Start the application
-CMD [ "node", "src/index.js" ]
+CMD [ "node", "src/app.js" ]
