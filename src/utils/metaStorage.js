@@ -39,13 +39,14 @@ class MetaStorage {
         }
     }
 
-    async markLeadAsProcessed(leadId, type) {
+    async markLeadAsProcessed(leadId, type, metaSubmittedAt = null) {
         try {
             const { error } = await supabase
                 .from('processed_leads')
                 .insert([{ 
                     lead_id: leadId,
-                    lead_type: type
+                    lead_type: type,
+                    meta_submitted_at: metaSubmittedAt
                 }]);
 
             if (error) throw error;

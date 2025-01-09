@@ -86,7 +86,7 @@ class FacebookProcessor {
                             const leadDetails = await this.metaService.getLeadDetails(lead.id);
                             await processor.process(leadDetails);
                             await this.addToSheet({...leadDetails, isB2B: type === 'b2b'});
-                            await this.storage.markLeadAsProcessed(lead.id, type);
+                            await this.storage.markLeadAsProcessed(lead.id, type, leadDetails.createdTime);
                             processedCount++;
                         }
                     } catch (error) {

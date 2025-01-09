@@ -16,15 +16,13 @@ async function loadHistoricalLeads() {
         console.log('\nLoading historical B2C leads...');
         const b2cLeads = await metaService.getNewLeads(process.env.META_B2C_FORM_ID);
         console.log('B2C leads count:', b2cLeads.length);
-
-        const timestamp = new Date().toISOString();
         
         for (const lead of b2bLeads) {
-            await storage.markLeadAsProcessed(lead.id, 'b2b', timestamp);
+            await storage.markLeadAsProcessed(lead.id, 'b2b', lead.created_time);
         }
         
         for (const lead of b2cLeads) {
-            await storage.markLeadAsProcessed(lead.id, 'b2c', timestamp);
+            await storage.markLeadAsProcessed(lead.id, 'b2c', lead.created_time);
         }
         
         console.log('Historical leads loaded successfully');

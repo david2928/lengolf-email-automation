@@ -13,13 +13,22 @@ async function getAuth() {
     
     try {
         if (isCloudRun) {
-            // In Cloud Run, use ADC (Application Default Credentials)
-            const auth = new GoogleAuth({
-                scopes: SCOPES,
-                projectId: process.env.PROJECT_ID
-            });
-            const client = await auth.getClient();
-            return client;
+            // First try Application Default Credentials
+            try {
+                const auth = new GoogleAuth({
+                    scopes: SCOPES
+                });
+                return auth.getClient();
+            } catch (adcError) {
+                console.log('Falling back to GCP_SA_KEY for deployment:', adcError.message);
+                // Fallback to GCP_SA_KEY if ADC fails
+                const credentials = JSON.parse(process.env.GCP_SA_KEY);
+                const auth = new GoogleAuth({
+                    credentials,
+                    scopes: SCOPES
+                });
+                return auth.getClient();
+            }
         } else {
             // Local development - use OAuth credentials
             const credPath = path.join(process.cwd(), 'credentials.json');
