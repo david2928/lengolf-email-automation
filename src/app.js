@@ -1,13 +1,17 @@
 require('dotenv').config();
+const express = require('express');
 const { getAuth } = require('./utils/auth');
 const { GmailService } = require('./services/gmailService');
 const { ClassPassProcessor } = require('./processors/classPassProcessor');
 const { WebResosProcessor } = require('./processors/webResosProcessor');
 const { FacebookProcessor } = require('./processors/facebookProcessor');
 
+const app = express();
+const port = process.env.PORT || 8080;
+
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 60 * 1000;
-const INTERVAL = 15 * 60 * 1000;
+const RETRY_DELAY = 60 * 1000; // 1 minute
+const PROCESSING_INTERVAL = 15 * 60 * 1000; // 15 minutes
 
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -89,10 +93,25 @@ async function startProcessing() {
         }
 
         console.log('Waiting for next cycle...');
-        await sleep(INTERVAL);
+        await sleep(PROCESSING_INTERVAL);
     }
 }
 
+// Health check endpoint
+app.get('/', (req, res) => {
+    res.status(200).send('OK');
+});
+
+// Start server and processing
+app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+    startProcessing().catch(error => {
+        console.error('Fatal error in processing:', error);
+        process.exit(1);
+    });
+});
+
+// Handle uncaught errors
 process.on('uncaughtException', (error) => {
     console.error('Uncaught exception:', error);
     process.exit(1);
@@ -100,10 +119,5 @@ process.on('uncaughtException', (error) => {
 
 process.on('unhandledRejection', (error) => {
     console.error('Unhandled rejection:', error);
-    process.exit(1);
-});
-
-startProcessing().catch(error => {
-    console.error('Fatal error in processing:', error);
     process.exit(1);
 });
