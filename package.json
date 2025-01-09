@@ -1,4 +1,6 @@
 {
+  "name": "lengolf-email-automation",
+  "version": "1.0.0",
   "dependencies": {
     "@google-cloud/local-auth": "^2.1.0",
     "@supabase/supabase-js": "^2.39.1",
