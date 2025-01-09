@@ -35,11 +35,13 @@ steps:
       - '--max-instances'
       - '2'
       - '--set-env-vars'
-      - 'PROJECT_ID=${PROJECT_ID},REGION=${_REGION},META_ACCESS_TOKEN=${_META_ACCESS_TOKEN},META_PAGE_ID=${_META_PAGE_ID},META_B2B_FORM_ID=${_META_B2B_FORM_ID},META_B2C_FORM_ID=${_META_B2C_FORM_ID}'
+      - 'PROCESSED_LEADS_PATH=/workspace/data/processed_leads.json,PROJECT_ID=${PROJECT_ID},REGION=${_REGION},META_ACCESS_TOKEN=${_META_ACCESS_TOKEN},META_PAGE_ID=${_META_PAGE_ID},META_B2B_FORM_ID=${_META_B2B_FORM_ID},META_B2C_FORM_ID=${_META_B2C_FORM_ID},FACEBOOK_SHEET_ID=${_FACEBOOK_SHEET_ID},FACEBOOK_B2B_SHEET_ID=${_FACEBOOK_B2B_SHEET_ID},LINE_TOKEN_CLASSPASS=${_LINE_TOKEN_CLASSPASS},LINE_TOKEN_WEBRESOS=${_LINE_TOKEN_WEBRESOS},LINE_TOKEN_FACEBOOK=${_LINE_TOKEN_FACEBOOK},LINE_TOKEN_B2B=${_LINE_TOKEN_B2B},LINE_TOKEN_B2C=${_LINE_TOKEN_B2C},LABEL_CLASSPASS=Web Leads (ClassPass),LABEL_WEB=Web Leads,LABEL_RESOS=Web Leads (ResOS),LABEL_FACEBOOK=Web Leads (Facebook),LABEL_COMPLETED=Web Leads - completed'
       - '--service-account'
       - 'email-processor-sa@${PROJECT_ID}.iam.gserviceaccount.com'
       - '--timeout'
       - '540s'
+      - '--volume'
+      - 'data,mount=/workspace/data'
 
 images:
   - 'asia-southeast1-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/email-processor'
@@ -50,3 +52,10 @@ substitutions:
   _META_PAGE_ID: # Set this in Cloud Build trigger
   _META_B2B_FORM_ID: # Set this in Cloud Build trigger
   _META_B2C_FORM_ID: # Set this in Cloud Build trigger
+  _FACEBOOK_SHEET_ID: # Set this in Cloud Build trigger
+  _FACEBOOK_B2B_SHEET_ID: # Set this in Cloud Build trigger
+  _LINE_TOKEN_CLASSPASS: # Set this in Cloud Build trigger
+  _LINE_TOKEN_WEBRESOS: # Set this in Cloud Build trigger
+  _LINE_TOKEN_FACEBOOK: # Set this in Cloud Build trigger
+  _LINE_TOKEN_B2B: # Set this in Cloud Build trigger
+  _LINE_TOKEN_B2C: # Set this in Cloud Build trigger
