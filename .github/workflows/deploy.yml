@@ -10,6 +10,11 @@ env:
   REGION: asia-southeast1
   SERVICE_NAME: email-processor
   PROCESSOR_SA: email-processor-sa@lengolf-email-automation.iam.gserviceaccount.com
+  LABEL_CLASSPASS: 'Web Leads (ClassPass)'
+  LABEL_WEB: 'Web Leads'
+  LABEL_RESOS: 'Web Leads (ResOS)'
+  LABEL_FACEBOOK: 'Web Leads (Facebook)'
+  LABEL_COMPLETED: 'Web Leads - completed'
 
 jobs:
   deploy:
@@ -66,11 +71,11 @@ jobs:
             META_PAGE_ID=${{ secrets.META_PAGE_ID }}
             META_B2B_FORM_ID=${{ secrets.META_B2B_FORM_ID }}
             META_B2C_FORM_ID=${{ secrets.META_B2C_FORM_ID }}
-            LABEL_CLASSPASS="Web Leads (ClassPass)"
-            LABEL_WEB="Web Leads"
-            LABEL_RESOS="Web Leads (ResOS)"
-            LABEL_FACEBOOK="Web Leads (Facebook)"
-            LABEL_COMPLETED="Web Leads - completed"
+            LABEL_CLASSPASS=${{ env.LABEL_CLASSPASS }}
+            LABEL_WEB=${{ env.LABEL_WEB }}
+            LABEL_RESOS=${{ env.LABEL_RESOS }}
+            LABEL_FACEBOOK=${{ env.LABEL_FACEBOOK }}
+            LABEL_COMPLETED=${{ env.LABEL_COMPLETED }}
           flags: |
             --memory=512Mi
             --cpu=1
