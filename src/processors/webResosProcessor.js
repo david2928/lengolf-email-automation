@@ -1,5 +1,6 @@
 const { LineNotifyService } = require('../utils/lineNotify');
 const { extractPlainText, formatDate, parseTime } = require('../utils/emailUtils');
+const { log } = require('../utils/logging');
 
 class WebResosProcessor {
   constructor(gmailService) {
@@ -18,7 +19,7 @@ class WebResosProcessor {
       const hoursMatch = bodyText.match(/Number of Hours:\s*(\d+)/i);
 
       if (!phoneMatch || !nameMatch || !timeMatch || !playersMatch || !hoursMatch) {
-        console.log('Missing required fields in web booking:', {
+        log('WARNING', 'Missing required fields in web booking', {
           hasPhone: !!phoneMatch,
           hasName: !!nameMatch,
           hasTime: !!timeMatch,
@@ -41,14 +42,17 @@ class WebResosProcessor {
         numberOfPlayers: playersMatch[1]
       };
     } catch (error) {
-      console.error('Error extracting web booking data:', error);
+      log('ERROR', 'Error extracting web booking data', {
+        error: error.message,
+        stack: error.stack
+      });
       return null;
     }
   }
 
   extractResOSData(bodyText) {
     try {
-      console.log('Processing ResOS email body text:', bodyText);
+      log('DEBUG', 'Processing ResOS email body text', { bodyText });
       
       const dateMatch = bodyText.match(/Date\s*(.*?\d{4})/i);
       const timeMatch = bodyText.match(/Time\s(\d{2}:\d{2}) - (\d{2}:\d{2})/i);
@@ -57,7 +61,7 @@ class WebResosProcessor {
       const phoneMatch = bodyText.match(/Phone\s*(\+\d+\s*\d+\s*\d+\s*\d+)/i);
 
       if (!dateMatch || !timeMatch || !peopleMatch || !nameMatch || !phoneMatch) {
-        console.log('Missing required fields in ResOS booking:', {
+        log('WARNING', 'Missing required fields in ResOS booking', {
           hasDate: !!dateMatch,
           hasTime: !!timeMatch,
           hasPeople: !!peopleMatch,
@@ -79,7 +83,10 @@ class WebResosProcessor {
         numberOfPlayers: peopleMatch[1]
       };
     } catch (error) {
-      console.error('Error extracting ResOS data:', error);
+      log('ERROR', 'Error extracting ResOS data', {
+        error: error.message,
+        stack: error.stack
+      });
       return null;
     }
   }
@@ -128,7 +135,7 @@ class WebResosProcessor {
     try {
       for (const sourceLabel of this.sourceLabels) {
         const threads = await this.gmail.listThreads(sourceLabel);
-        console.log(`Processing ${threads.length} threads from ${sourceLabel}`);
+        log('INFO', `Processing threads from ${sourceLabel}`, { count: threads.length });
 
         for (const thread of threads) {
           try {
@@ -137,7 +144,10 @@ class WebResosProcessor {
             for (const message of messages) {
               const bodyHtml = await this.gmail.getMessageBody(message.id);
               const bodyText = extractPlainText(bodyHtml);
-              console.log('Processing message body:', bodyText);
+              log('DEBUG', 'Processing message body', { 
+                messageId: message.id,
+                bodyText
+              });
               
               const isResOS = sourceLabel === process.env.LABEL_RESOS;
               const bookingData = isResOS ? 
@@ -147,22 +157,35 @@ class WebResosProcessor {
               if (bookingData) {
                 const source = isResOS ? 'ResOS' : 'Website';
                 const lineMessage = this.createLineMessage(bookingData, source);
-                console.log('Sending LINE message:', lineMessage);
+                log('DEBUG', 'Sending LINE message', { message: lineMessage });
                 
                 await this.lineNotify.send(lineMessage);
                 await this.gmail.moveThread(thread.id, sourceLabel, this.completedLabel);
-                console.log(`Processed ${source} booking for:`, bookingData.customerName);
+                log('INFO', `Processed ${source} booking`, {
+                  customer: bookingData.customerName,
+                  date: bookingData.date,
+                  time: bookingData.startTime,
+                  players: bookingData.numberOfPlayers
+                });
               } else {
-                console.log('Could not extract booking data from message');
+                log('WARNING', 'Could not extract booking data from message', {
+                  messageId: message.id
+                });
               }
             }
           } catch (threadError) {
-            console.error(`Error processing thread ${thread.id}:`, threadError);
+            log('ERROR', `Error processing thread ${thread.id}`, {
+              error: threadError.message,
+              stack: threadError.stack
+            });
           }
         }
       }
     } catch (error) {
-      console.error('Error processing Web/ResOS emails:', error);
+      log('ERROR', 'Error processing Web/ResOS emails', {
+        error: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }

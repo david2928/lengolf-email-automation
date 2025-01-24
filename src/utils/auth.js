@@ -2,8 +2,8 @@ const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const { google } = require('googleapis');
 const path = require('path');
 const fs = require('fs');
+const { log } = require('./logging');
 
-// Define scopes for authentication
 const SCOPES = [
     'https://www.googleapis.com/auth/gmail.modify',
     'https://www.googleapis.com/auth/gmail.labels',
@@ -20,13 +20,16 @@ async function accessSecret(secretName) {
             throw new Error('PROJECT_ID environment variable is not set');
         }
 
-        console.log(`Accessing secret ${secretName} in project ${projectId}`);
-        const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
+        log('INFO', 'Accessing secret', { 
+            secretName,
+            projectId 
+        });
         
+        const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
         const [version] = await client.accessSecretVersion({ name });
         return version.payload.data.toString('utf8');
     } catch (error) {
-        console.error(`Error accessing secret ${secretName}:`, {
+        log('ERROR', `Error accessing secret ${secretName}`, {
             error: error.message,
             details: error.details,
             code: error.code,
@@ -40,10 +43,13 @@ async function verifyAuth(auth) {
     try {
         const gmail = google.gmail({ version: 'v1', auth });
         await gmail.users.labels.list({ userId: 'me' });
-        console.log('Authentication verified successfully');
+        log('INFO', 'Authentication verified successfully');
         return true;
     } catch (error) {
-        console.error('Auth verification failed:', error);
+        log('ERROR', 'Auth verification failed', {
+            error: error.message,
+            stack: error.stack
+        });
         return false;
     }
 }
@@ -53,8 +59,7 @@ async function getAuth() {
 
     try {
         if (isCloudRun) {
-            console.log('Running in Cloud Run, using Secret Manager');
-            // Get credentials and token from Secret Manager
+            log('INFO', 'Running in Cloud Run, using Secret Manager');
             const [credentials, token] = await Promise.all([
                 accessSecret('gmail-credentials'),
                 accessSecret('gmail-token')
@@ -64,20 +69,17 @@ async function getAuth() {
             const { client_secret, client_id, redirect_uris } = credentialsData.installed || credentialsData.web;
             const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
             
-            // Set credentials from token
             const tokenData = JSON.parse(token);
             oAuth2Client.setCredentials(tokenData);
             
-            // Verify if the token is still valid
             if (await verifyAuth(oAuth2Client)) {
-                console.log('Using existing token');
+                log('INFO', 'Using existing token');
                 return oAuth2Client;
             } else {
                 throw new Error('Token validation failed');
             }
         } else {
-            console.log('Running locally, using credential files');
-            // Local development - use OAuth credentials from files
+            log('INFO', 'Running locally, using credential files');
             const credPath = path.join(process.cwd(), 'credentials.json');
             const content = fs.readFileSync(credPath);
             const keys = JSON.parse(content);
@@ -90,27 +92,26 @@ async function getAuth() {
                 redirectUri: client.redirect_uris[0]
             });
 
-            // Load saved token
             const tokenPath = path.join(process.cwd(), 'token.json');
             const tokenContent = fs.readFileSync(tokenPath);
             const tokens = JSON.parse(tokenContent);
             
             oauth2Client.setCredentials(tokens);
             
-            // Set up token refresh callback
             oauth2Client.on('tokens', (tokens) => {
                 if (tokens.refresh_token) {
                     fs.writeFileSync(tokenPath, JSON.stringify(tokens));
+                    log('INFO', 'Token refreshed and saved');
                 }
             });
 
             return oauth2Client;
         }
     } catch (error) {
-        console.error('Auth error:', {
+        log('ERROR', 'Authentication error', {
             error: error.message,
             stack: error.stack,
-            isCloudRun: process.env.K_SERVICE !== undefined,
+            isCloudRun,
             projectId: process.env.GOOGLE_CLOUD_PROJECT || process.env.PROJECT_ID
         });
         throw error;

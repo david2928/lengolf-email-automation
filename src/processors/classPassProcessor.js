@@ -1,5 +1,6 @@
 const { LineNotifyService } = require('../utils/lineNotify');
 const { extractPlainText, formatDate } = require('../utils/emailUtils');
+const { log } = require('../utils/logging');
 
 class ClassPassProcessor {
   constructor(gmailService) {
@@ -15,13 +16,11 @@ class ClassPassProcessor {
 
     const [, reservationDate, reservationTime] = dateTimeMatch;
     
-    // Updated regex to capture name and email while avoiding footer content
     const nameMatch = bodyText.match(/Reservation made by:\s*Name:\s*([^\r\n]+?)(?:\s+Email:|$)/i);
     if (!nameMatch) return null;
 
     const customerName = nameMatch[1].trim();
     
-    // Extract email if present (optional)
     const emailMatch = bodyText.match(/Email:\s*([^\s\r\n]+@[^\s\r\n]+)/i);
     const email = emailMatch ? emailMatch[1].trim() : '';
     
@@ -64,7 +63,7 @@ class ClassPassProcessor {
   async processEmails() {
     try {
       const threads = await this.gmail.listThreads(this.sourceLabel);
-      console.log(`Processing ${threads.length} ClassPass threads`);
+      log('INFO', 'Processing ClassPass threads', { count: threads.length });
 
       for (const thread of threads) {
         const messages = await this.gmail.getThreadMessages(thread.id);
@@ -78,12 +77,19 @@ class ClassPassProcessor {
             const lineMessage = this.createLineMessage(details);
             await this.lineNotify.send(lineMessage);
             await this.gmail.moveThread(thread.id, this.sourceLabel, this.completedLabel);
-            console.log('Processed ClassPass booking for:', details.customerName);
+            log('INFO', 'Processed ClassPass booking', { 
+              customer: details.customerName,
+              date: details.date,
+              time: details.startTime
+            });
           }
         }
       }
     } catch (error) {
-      console.error('Error processing ClassPass emails:', error);
+      log('ERROR', 'Error processing ClassPass emails', {
+        error: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }

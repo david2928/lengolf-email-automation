@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { log } = require('./logging');
 
 class LineNotifyService {
   constructor(token) {
@@ -17,10 +18,13 @@ class LineNotifyService {
           }
         }
       );
-      console.log('LINE Notify sent successfully:', response.status);
+      log('INFO', 'LINE Notify sent successfully', { status: response.status });
       return response.data;
     } catch (error) {
-      console.error('Error sending LINE notification:', error.response?.data || error.message);
+      log('ERROR', 'Error sending LINE notification', {
+        error: error.response?.data || error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }

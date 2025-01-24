@@ -1,8 +1,9 @@
 const { google } = require('googleapis');
+const { log } = require('../utils/logging');
 
 class GmailService {
   constructor(auth) {
-    this.auth = auth; // Store the auth object
+    this.auth = auth;
     this.gmail = google.gmail({ version: 'v1', auth });
   }
 
@@ -13,9 +14,17 @@ class GmailService {
       });
       
       const label = response.data.labels.find(l => l.name === labelName);
-      return label ? label.id : null;
+      if (!label) {
+        log('WARNING', 'Label not found', { labelName });
+        return null;
+      }
+      return label.id;
     } catch (error) {
-      console.error('Error getting label ID:', error);
+      log('ERROR', 'Error getting label ID', {
+        labelName,
+        error: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }
@@ -24,7 +33,6 @@ class GmailService {
     try {
       const labelId = await this.getLabelId(labelName);
       if (!labelId) {
-        console.warn(`Label not found: ${labelName}`);
         return [];
       }
 
@@ -34,9 +42,18 @@ class GmailService {
         maxResults: 100
       });
 
-      return response.data.threads || [];
+      const threads = response.data.threads || [];
+      log('INFO', 'Listed threads for label', {
+        labelName,
+        count: threads.length
+      });
+      return threads;
     } catch (error) {
-      console.error('Error listing threads:', error);
+      log('ERROR', 'Error listing threads', {
+        labelName,
+        error: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }
@@ -47,9 +64,18 @@ class GmailService {
         userId: 'me',
         id: threadId
       });
-      return response.data.messages || [];
+      const messages = response.data.messages || [];
+      log('DEBUG', 'Retrieved thread messages', {
+        threadId,
+        messageCount: messages.length
+      });
+      return messages;
     } catch (error) {
-      console.error('Error getting thread messages:', error);
+      log('ERROR', 'Error getting thread messages', {
+        threadId,
+        error: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }
@@ -78,9 +104,14 @@ class GmailService {
         }
       }
 
+      log('WARNING', 'No message body found', { messageId });
       return '';
     } catch (error) {
-      console.error('Error getting message body:', error);
+      log('ERROR', 'Error getting message body', {
+        messageId,
+        error: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }
@@ -98,8 +129,20 @@ class GmailService {
           addLabelIds: [targetLabelId]
         }
       });
+      
+      log('INFO', 'Thread moved successfully', {
+        threadId,
+        from: sourceLabel,
+        to: targetLabel
+      });
     } catch (error) {
-      console.error('Error moving thread:', error);
+      log('ERROR', 'Error moving thread', {
+        threadId,
+        sourceLabel,
+        targetLabel,
+        error: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }
