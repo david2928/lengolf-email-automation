@@ -179,6 +179,7 @@ class FacebookProcessor {
                 let processedCount = 0;
                 let spamCount = 0;
                 let totalLeads = 0;
+                let notificationErrors = 0;
                 
                 for (const [formKey, formId] of Object.entries(formIds)) {
                     const leads = await this.metaService.getNewLeads(formId);
@@ -210,12 +211,21 @@ class FacebookProcessor {
                                     continue;
                                 }
 
-                                // Only send LINE notification and add to sheets if not spam
-                                await processor.sendNotification(leadDetails, processedLead);
-                                log('INFO', 'Sent LINE notification', {
-                                    fullName: leadDetails.fullName,
-                                    leadId: lead.id
-                                });
+                                // Try to send LINE notification but continue if it fails
+                                try {
+                                    await processor.sendNotification(leadDetails, processedLead);
+                                    log('INFO', 'Sent LINE notification', {
+                                        fullName: leadDetails.fullName,
+                                        leadId: lead.id
+                                    });
+                                } catch (notifyError) {
+                                    notificationErrors++;
+                                    log('WARNING', 'Failed to send LINE notification but continuing processing', {
+                                        error: notifyError.message,
+                                        fullName: leadDetails.fullName,
+                                        leadId: lead.id
+                                    });
+                                }
                                 
                                 await this.addToSheet({
                                     ...leadDetails,
@@ -238,6 +248,7 @@ class FacebookProcessor {
                         totalLeads,
                         processedCount,
                         spamCount,
+                        notificationErrors,
                         existingLeads: totalLeads - processedCount - spamCount
                     });
                 }
