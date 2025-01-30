@@ -4,6 +4,7 @@ const { getAuth } = require('./utils/auth');
 const { GmailService } = require('./services/gmailService');
 const { ClassPassProcessor } = require('./processors/classPassProcessor');
 const { WebResosProcessor } = require('./processors/webResosProcessor');
+const { FacebookProcessor } = require('./processors/facebookProcessor');
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -46,7 +47,8 @@ async function processLeadsWithRetry(processors, retryCount = 0) {
     try {
         await Promise.all([
             processors.classPass.processEmails(),
-            processors.webResos.processEmails()
+            processors.webResos.processEmails(),
+            processors.facebook.processNewLeads()
         ]);
         return true;
     } catch (error) {
@@ -67,7 +69,8 @@ async function processLeads() {
         const gmailService = await initializeServices();
         const processors = {
             classPass: new ClassPassProcessor(gmailService),
-            webResos: new WebResosProcessor(gmailService)
+            webResos: new WebResosProcessor(gmailService),
+            facebook: new FacebookProcessor(gmailService)
         };
 
         log('INFO', 'Starting lead processing');
