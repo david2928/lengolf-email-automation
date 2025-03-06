@@ -1,11 +1,15 @@
-const { LineNotifyService } = require('../utils/lineNotify');
+const { LineMessagingService } = require('../utils/lineMessaging');
 const { extractPlainText, formatDate, parseTime } = require('../utils/emailUtils');
 const { log } = require('../utils/logging');
 
 class WebResosProcessor {
   constructor(gmailService) {
     this.gmail = gmailService;
-    this.lineNotify = new LineNotifyService(process.env.LINE_TOKEN_WEBRESOS);
+    this.lineMessaging = new LineMessagingService(
+      process.env.LINE_CHANNEL_ACCESS_TOKEN_WEBRESOS || process.env.LINE_CHANNEL_ACCESS_TOKEN,
+      process.env.LINE_GROUP_ID_WEBRESOS || process.env.LINE_GROUP_ID,
+      'WEBRESOS'
+    );
     this.sourceLabels = [process.env.LABEL_WEB, process.env.LABEL_RESOS];
     this.completedLabel = process.env.LABEL_COMPLETED;
   }
@@ -159,7 +163,7 @@ class WebResosProcessor {
                 const lineMessage = this.createLineMessage(bookingData, source);
                 log('DEBUG', 'Sending LINE message', { message: lineMessage });
                 
-                await this.lineNotify.send(lineMessage);
+                await this.lineMessaging.send(lineMessage);
                 await this.gmail.moveThread(thread.id, sourceLabel, this.completedLabel);
                 log('INFO', `Processed ${source} booking`, {
                   customer: bookingData.customerName,

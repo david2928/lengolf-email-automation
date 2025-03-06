@@ -205,7 +205,8 @@ class FacebookProcessor {
                                     log('INFO', 'Skipped spam lead', {
                                         fullName: leadDetails.fullName,
                                         leadId: lead.id,
-                                        spamScore: processedLead.spamScore
+                                        spamScore: processedLead.spamScore,
+                                        detectionType: processedLead.detectionType || 'rule-based'
                                     });
                                     spamCount++;
                                     continue;

@@ -1,11 +1,15 @@
-const { LineNotifyService } = require('../utils/lineNotify');
+const { LineMessagingService } = require('../utils/lineMessaging');
 const { calculateSpamScore } = require('../utils/fraudDetection');
 const { log } = require('../utils/logging');
 
 class FacebookB2BProcessor {
     constructor(gmailService) {
         this.gmailService = gmailService;
-        this.lineNotify = new LineNotifyService(process.env.LINE_TOKEN_B2B || process.env.LINE_TOKEN_FACEBOOK);
+        this.lineMessaging = new LineMessagingService(
+            process.env.LINE_CHANNEL_ACCESS_TOKEN_B2B || process.env.LINE_CHANNEL_ACCESS_TOKEN,
+            process.env.LINE_GROUP_ID_B2B || process.env.LINE_GROUP_ID,
+            'B2B'
+        );
         this.b2bSheetId = process.env.FACEBOOK_B2B_SHEET_ID;
     }
 
@@ -62,7 +66,7 @@ class FacebookB2BProcessor {
     async sendNotification(data, processedLead) {
         try {
             const message = this.createLineMessage(data, processedLead);
-            await this.lineNotify.send(message);
+            await this.lineMessaging.send(message);
             log('INFO', 'Sent B2B LINE notification', { 
                 fullName: data.fullName,
                 companyName: data.companyName
@@ -88,7 +92,7 @@ class FacebookB2BProcessor {
                 throw new Error('Invalid B2B lead data');
             }
 
-            const spamInfo = calculateSpamScore(data);
+            const spamInfo = await calculateSpamScore(data);
             
             // Only send notification if not skipping and not spam
             if (!skipNotification && !spamInfo.isLikelySpam) {
@@ -101,6 +105,7 @@ class FacebookB2BProcessor {
                 isLikelySpam: spamInfo.isLikelySpam,
                 spamScore: spamInfo.score,
                 spamReasons: spamInfo.reasons,
+                detectionType: spamInfo.detectionType || 'rule-based',
                 eventType: data.eventType,
                 expectedAttendees: data.expectedAttendees,
                 budgetPerPerson: data.budgetPerPerson

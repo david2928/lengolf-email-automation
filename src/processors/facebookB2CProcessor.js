@@ -1,11 +1,15 @@
-const { LineNotifyService } = require('../utils/lineNotify');
+const { LineMessagingService } = require('../utils/lineMessaging');
 const { calculateSpamScore } = require('../utils/fraudDetection');
 const { log } = require('../utils/logging');
 
 class FacebookB2CProcessor {
     constructor(gmailService) {
         this.gmailService = gmailService;
-        this.lineNotify = new LineNotifyService(process.env.LINE_TOKEN_B2C || process.env.LINE_TOKEN_FACEBOOK);
+        this.lineMessaging = new LineMessagingService(
+            process.env.LINE_CHANNEL_ACCESS_TOKEN_B2C || process.env.LINE_CHANNEL_ACCESS_TOKEN,
+            process.env.LINE_GROUP_ID_B2C || process.env.LINE_GROUP_ID,
+            'B2C'
+        );
     }
 
     validateLead(lead) {
@@ -56,7 +60,7 @@ class FacebookB2CProcessor {
     async sendNotification(data, processedLead) {
         try {
             const message = this.createLineMessage(data, processedLead);
-            await this.lineNotify.send(message);
+            await this.lineMessaging.send(message);
             log('INFO', 'Sent B2C LINE notification', { 
                 fullName: data.fullName,
                 groupSize: data.groupSize
@@ -81,7 +85,7 @@ class FacebookB2CProcessor {
                 throw new Error('Invalid B2C lead data');
             }
 
-            const spamInfo = calculateSpamScore(data);
+            const spamInfo = await calculateSpamScore(data);
             
             // Only send notification if not skipping and not spam
             if (!skipNotification && !spamInfo.isLikelySpam) {
@@ -93,7 +97,11 @@ class FacebookB2CProcessor {
                 type: 'B2C',
                 isLikelySpam: spamInfo.isLikelySpam,
                 spamScore: spamInfo.score,
-                spamReasons: spamInfo.reasons
+                spamReasons: spamInfo.reasons,
+                detectionType: spamInfo.detectionType || 'rule-based',
+                previousExperience: data.previousLengolfExperience,
+                groupSize: data.groupSize,
+                preferredTime: data.preferredTime
             };
         } catch (error) {
             log('ERROR', 'Error processing B2C lead', {

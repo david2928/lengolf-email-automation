@@ -1,11 +1,15 @@
-const { LineNotifyService } = require('../utils/lineNotify');
+const { LineMessagingService } = require('../utils/lineMessaging');
 const { extractPlainText, formatDate } = require('../utils/emailUtils');
 const { log } = require('../utils/logging');
 
 class ClassPassProcessor {
   constructor(gmailService) {
     this.gmail = gmailService;
-    this.lineNotify = new LineNotifyService(process.env.LINE_TOKEN_CLASSPASS);
+    this.lineMessaging = new LineMessagingService(
+      process.env.LINE_CHANNEL_ACCESS_TOKEN_CLASSPASS || process.env.LINE_CHANNEL_ACCESS_TOKEN,
+      process.env.LINE_GROUP_ID_CLASSPASS || process.env.LINE_GROUP_ID,
+      'CLASSPASS'
+    );
     this.sourceLabel = process.env.LABEL_CLASSPASS;
     this.completedLabel = process.env.LABEL_COMPLETED;
   }
@@ -75,7 +79,7 @@ class ClassPassProcessor {
           const details = this.extractReservationDetails(bodyText);
           if (details) {
             const lineMessage = this.createLineMessage(details);
-            await this.lineNotify.send(lineMessage);
+            await this.lineMessaging.send(lineMessage);
             await this.gmail.moveThread(thread.id, this.sourceLabel, this.completedLabel);
             log('INFO', 'Processed ClassPass booking', { 
               customer: details.customerName,

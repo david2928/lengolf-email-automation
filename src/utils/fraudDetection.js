@@ -22,6 +22,9 @@ const SUSPICIOUS_NAME_PATTERNS = [
     /[!@#$%^&*()?":{}|<>]/  // Other special characters (removed comma and period)
 ];
 
+const { llmSpamDetector } = require('./llmSpamDetection');
+const { log } = require('./logging');
+
 function isSpamEmail(email) {
     if (!email) return false;
     
@@ -87,10 +90,37 @@ function detectPhoneSpam(phone) {
     return isSpam;
 }
 
-function calculateSpamScore(lead) {
+async function calculateSpamScore(lead) {
     let score = 0;
     let reasons = [];
 
+    // Try to use LLM-based detection first
+    try {
+        const llmResult = await llmSpamDetector.detectSpam(lead);
+        
+        if (llmResult) {
+            // LLM detection worked, use its result
+            log('INFO', 'Using LLM for spam detection', { 
+                leadName: lead.fullName,
+                score: llmResult.spamScore,
+                isSpam: llmResult.isLikelySpam
+            });
+            
+            return {
+                score: llmResult.spamScore,
+                reasons: llmResult.spamReasons,
+                isLikelySpam: llmResult.isLikelySpam,
+                llmAnalysis: llmResult.llmAnalysis,
+                detectionType: 'llm'
+            };
+        }
+    } catch (error) {
+        log('WARNING', 'Error in LLM spam detection, falling back to rule-based', { 
+            error: error.message 
+        });
+        // Fall back to rule-based detection on error
+    }
+    
     // Email checks
     if (isSpamEmail(lead.email)) {
         score += 3;
@@ -104,7 +134,7 @@ function calculateSpamScore(lead) {
     }
 
     // Phone checks
-    if (detectPhoneSpam(lead.phoneNumber)) {
+    if (detectPhoneSpam(lead.phoneNumber || lead.phone)) {
         score += 2;
         reasons.push('Suspicious phone pattern');
     }
@@ -117,13 +147,45 @@ function calculateSpamScore(lead) {
         reasons.push('Created during suspicious hours');
     }
 
-    // Multiple submissions check (requires external data)
-    // This would be implemented when we have access to historical data
+    console.log('Rule-based detection results:', { score, reasons, isLikelySpam: score >= 3 });
+
+    // Check for suspicious patterns in Thai names with random characters
+    // This helps catch the examples provided in the request
+    if (lead.fullName && typeof lead.fullName === 'string') {
+        // Check for Thai names followed by random Latin characters
+        const thaiNameWithRandomChars = /^[\u0E00-\u0E7F\s]+([\W\da-zA-Z]{4,})/;
+        if (thaiNameWithRandomChars.test(lead.fullName)) {
+            score += 3;
+            reasons.push('Thai name with random character suffix');
+        }
+        
+        // Check for excessive mixed character types (Thai + Latin + numbers + symbols)
+        let charTypeCounts = {
+            thai: 0,
+            latin: 0,
+            number: 0,
+            symbol: 0
+        };
+        
+        for (const char of lead.fullName) {
+            if (/[\u0E00-\u0E7F]/.test(char)) charTypeCounts.thai++;
+            else if (/[a-zA-Z]/.test(char)) charTypeCounts.latin++;
+            else if (/\d/.test(char)) charTypeCounts.number++;
+            else if (/\W/.test(char)) charTypeCounts.symbol++;
+        }
+        
+        const hasExcessiveMixing = Object.values(charTypeCounts).filter(count => count > 0).length >= 3;
+        if (hasExcessiveMixing && charTypeCounts.thai > 0) {
+            score += 2;
+            reasons.push('Excessive character type mixing in name');
+        }
+    }
 
     return {
         score,
         reasons,
-        isLikelySpam: score >= 3
+        isLikelySpam: score >= 3,
+        detectionType: 'rule-based'
     };
 }
 
