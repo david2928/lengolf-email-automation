@@ -37,6 +37,7 @@ jobs:
           gcloud services enable run.googleapis.com
           gcloud services enable cloudscheduler.googleapis.com
           gcloud services enable secretmanager.googleapis.com
+          gcloud services enable aiplatform.googleapis.com
           sleep 30
 
       - name: Deploy to Cloud Run
@@ -54,22 +55,27 @@ jobs:
             --timeout 540s \
             --set-env-vars="GOOGLE_CLOUD_PROJECT=lengolf-email-automation" \
             --set-env-vars="PROJECT_ID=lengolf-email-automation" \
+            --set-env-vars="REGION=asia-southeast1" \
             --set-env-vars="SUPABASE_URL=${{ secrets.SUPABASE_URL }}" \
             --set-env-vars="SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             --set-env-vars="FACEBOOK_SHEET_ID=${{ secrets.FACEBOOK_SHEET_ID }}" \
             --set-env-vars="FACEBOOK_B2B_SHEET_ID=${{ secrets.FACEBOOK_B2B_SHEET_ID }}" \
-            --set-env-vars="LINE_TOKEN_CLASSPASS=${{ secrets.LINE_TOKEN_CLASSPASS }}" \
-            --set-env-vars="LINE_TOKEN_WEBRESOS=${{ secrets.LINE_TOKEN_WEBRESOS }}" \
-            --set-env-vars="LINE_TOKEN_FACEBOOK=${{ secrets.LINE_TOKEN_FACEBOOK }}" \
-            --set-env-vars="LINE_TOKEN_B2B=${{ secrets.LINE_TOKEN_B2B }}" \
-            --set-env-vars="LINE_TOKEN_B2C=${{ secrets.LINE_TOKEN_B2C }}" \
             --set-env-vars="META_ACCESS_TOKEN=${{ secrets.META_ACCESS_TOKEN }}" \
             --set-env-vars="META_PAGE_ID=${{ secrets.META_PAGE_ID }}" \
-            --set-env-vars="META_B2B_FORM_ID=${{ secrets.META_B2B_FORM_ID }}" \
-            --set-env-vars="META_B2C_FORM_ID=${{ secrets.META_B2C_FORM_ID }}" \
+            --set-env-vars="FORM_ID_B2B_NEW=${{ secrets.META_B2B_FORM_ID }}" \
+            --set-env-vars="FORM_ID_B2C_NEW=${{ secrets.META_B2C_FORM_ID }}" \
             --set-env-vars="LABEL_CLASSPASS=Web Leads (ClassPass)" \
             --set-env-vars="LABEL_WEB=Web Leads" \
             --set-env-vars="LABEL_RESOS=Web Leads (ResOS)" \
             --set-env-vars="LABEL_FACEBOOK=Web Leads (Facebook)" \
             --set-env-vars="LABEL_COMPLETED=Web Leads - completed" \
+            --set-env-vars="LINE_CHANNEL_ACCESS_TOKEN=${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}" \
+            --set-env-vars="LINE_CHANNEL_SECRET=${{ secrets.LINE_CHANNEL_SECRET }}" \
+            --set-env-vars="LINE_GROUP_ID=${{ secrets.LINE_GROUP_ID }}" \
+            --set-env-vars="LINE_GROUP_ID_B2B=${{ secrets.LINE_GROUP_ID_B2B }}" \
+            --set-env-vars="LINE_GROUP_ID_B2C=${{ secrets.LINE_GROUP_ID_B2C }}" \
+            --set-env-vars="LINE_GROUP_ID_CLASSPASS=${{ secrets.LINE_GROUP_ID_CLASSPASS }}" \
+            --set-env-vars="LINE_GROUP_ID_WEBRESOS=${{ secrets.LINE_GROUP_ID_WEBRESOS }}" \
+            --set-env-vars="VERTEX_LOCATION=us-central1" \
+            --set-env-vars="ENABLE_LLM_SPAM_DETECTION=true" \
             --quiet
