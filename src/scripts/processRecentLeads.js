@@ -12,8 +12,13 @@ log('INFO', 'Script starting', { timestamp: new Date().toISOString() });
 // Constants
 const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
 const META_PAGE_ID = process.env.META_PAGE_ID;
-const FORM_ID_B2B_NEW = process.env.FORM_ID_B2B_NEW || process.env.META_B2B_FORM_ID;
-const FORM_ID_B2C_NEW = process.env.FORM_ID_B2C_NEW || process.env.META_B2C_FORM_ID;
+
+// All form IDs from the code snippet
+const FORM_ID_B2B_NEW = '562422893450533';
+const FORM_ID_B2B_OLD = '905376497889703';
+const FORM_ID_B2C_NEW = '625669719834512';
+const FORM_ID_B2C_OLD = '1067700894958557';
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -21,7 +26,9 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 console.log('Environment variables loaded:');
 console.log(`META_PAGE_ID: ${META_PAGE_ID}`);
 console.log(`FORM_ID_B2B_NEW: ${FORM_ID_B2B_NEW}`);
+console.log(`FORM_ID_B2B_OLD: ${FORM_ID_B2B_OLD}`);
 console.log(`FORM_ID_B2C_NEW: ${FORM_ID_B2C_NEW}`);
+console.log(`FORM_ID_B2C_OLD: ${FORM_ID_B2C_OLD}`);
 console.log(`SUPABASE_URL: ${SUPABASE_URL ? 'Set' : 'Not set'}`);
 console.log(`SUPABASE_KEY: ${SUPABASE_KEY ? 'Set' : 'Not set'}`);
 
@@ -34,8 +41,10 @@ const CUTOFF_DATE = new Date('2025-03-06T00:00:00Z');
 // Log configuration values (without sensitive data)
 log('INFO', 'Script configuration', {
   pageId: META_PAGE_ID,
-  formIdB2B: FORM_ID_B2B_NEW,
-  formIdB2C: FORM_ID_B2C_NEW,
+  formIdB2BNew: FORM_ID_B2B_NEW,
+  formIdB2BOld: FORM_ID_B2B_OLD,
+  formIdB2CNew: FORM_ID_B2C_NEW,
+  formIdB2COld: FORM_ID_B2C_OLD,
   cutoffDate: CUTOFF_DATE.toISOString()
 });
 
@@ -392,21 +401,39 @@ async function processRecentLeads() {
       cutoffDate: CUTOFF_DATE.toISOString()
     });
     
-    // Process B2B leads
-    console.log('Processing B2B leads...');
-    const b2bProcessed = await processLeadsFromForm(FORM_ID_B2B_NEW, 'B2B');
+    // Process B2B leads from new form
+    console.log('Processing B2B leads from new form...');
+    const b2bNewProcessed = await processLeadsFromForm(FORM_ID_B2B_NEW, 'B2B');
     
-    // Process B2C leads
-    console.log('Processing B2C leads...');
-    const b2cProcessed = await processLeadsFromForm(FORM_ID_B2C_NEW, 'B2C');
+    // Process B2B leads from old form
+    console.log('Processing B2B leads from old form...');
+    const b2bOldProcessed = await processLeadsFromForm(FORM_ID_B2B_OLD, 'B2B');
+    
+    // Process B2C leads from new form
+    console.log('Processing B2C leads from new form...');
+    const b2cNewProcessed = await processLeadsFromForm(FORM_ID_B2C_NEW, 'B2C');
+    
+    // Process B2C leads from old form
+    console.log('Processing B2C leads from old form...');
+    const b2cOldProcessed = await processLeadsFromForm(FORM_ID_B2C_OLD, 'B2C');
+    
+    // Calculate total
+    const totalProcessed = b2bNewProcessed + b2bOldProcessed + b2cNewProcessed + b2cOldProcessed;
     
     log('SUCCESS', 'Completed processing recent leads', {
-      b2bProcessed,
-      b2cProcessed,
-      total: b2bProcessed + b2cProcessed
+      b2bNewProcessed,
+      b2bOldProcessed,
+      b2cNewProcessed,
+      b2cOldProcessed,
+      total: totalProcessed
     });
     
-    console.log(`Completed processing recent leads: ${b2bProcessed} B2B, ${b2cProcessed} B2C, ${b2bProcessed + b2cProcessed} total`);
+    console.log(`Completed processing recent leads: 
+      - B2B New: ${b2bNewProcessed}
+      - B2B Old: ${b2bOldProcessed}
+      - B2C New: ${b2cNewProcessed}
+      - B2C Old: ${b2cOldProcessed}
+      - Total: ${totalProcessed}`);
   } catch (error) {
     log('ERROR', 'Error in processRecentLeads', {
       error: error.message
