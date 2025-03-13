@@ -8,8 +8,8 @@ const { log } = require('../utils/logging');
 // Constants
 const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
 const META_PAGE_ID = process.env.META_PAGE_ID;
-const FORM_ID_B2B_NEW = process.env.FORM_ID_B2B_NEW;
-const FORM_ID_B2C_NEW = process.env.FORM_ID_B2C_NEW;
+const FORM_ID_B2B_NEW = process.env.FORM_ID_B2B_NEW || process.env.META_B2B_FORM_ID;
+const FORM_ID_B2C_NEW = process.env.FORM_ID_B2C_NEW || process.env.META_B2C_FORM_ID;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -18,6 +18,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Date cutoff (March 6th, 2025)
 const CUTOFF_DATE = new Date('2025-03-06T00:00:00Z');
+
+// Log configuration values (without sensitive data)
+log('INFO', 'Script configuration', {
+  pageId: META_PAGE_ID,
+  formIdB2B: FORM_ID_B2B_NEW,
+  formIdB2C: FORM_ID_B2C_NEW,
+  cutoffDate: CUTOFF_DATE.toISOString()
+});
 
 // Initialize processors
 const b2bProcessor = new FacebookB2BProcessor();
@@ -30,30 +38,44 @@ const b2cProcessor = new FacebookB2CProcessor();
  */
 async function fetchLeadsSinceCutoff(formId) {
   try {
-    const url = `https://graph.facebook.com/v18.0/${formId}/leads`;
-    const params = {
+    // First, get the form details from the page
+    const formUrl = `https://graph.facebook.com/v18.0/${META_PAGE_ID}/leadgen_forms`;
+    const formParams = {
       access_token: META_ACCESS_TOKEN,
-      fields: 'created_time,field_data,ad_id,ad_name,form_id,platform,is_organic',
-      limit: 100 // Increase limit to get more leads at once
+      fields: 'id,name,leads{created_time,field_data,ad_id,ad_name,form_id,platform,is_organic}'
     };
 
-    log('INFO', `Fetching leads from form ${formId} since ${CUTOFF_DATE.toISOString()}`, { formId });
-    const response = await axios.get(url, { params });
+    log('INFO', `Fetching forms from page ${META_PAGE_ID}`, { formId });
+    const formResponse = await axios.get(formUrl, { params: formParams });
     
-    if (!response.data || !response.data.data || response.data.data.length === 0) {
-      log('INFO', 'No leads found for form', { formId });
+    if (!formResponse.data || !formResponse.data.data || formResponse.data.data.length === 0) {
+      log('INFO', 'No forms found for page', { pageId: META_PAGE_ID });
+      return [];
+    }
+
+    // Find the form with the matching ID
+    const targetForm = formResponse.data.data.find(form => form.id === formId);
+    
+    if (!targetForm) {
+      log('WARN', 'Form not found', { formId });
+      return [];
+    }
+
+    if (!targetForm.leads || !targetForm.leads.data || targetForm.leads.data.length === 0) {
+      log('INFO', 'No leads found for form', { formId, formName: targetForm.name });
       return [];
     }
 
     // Filter leads by date
-    const recentLeads = response.data.data.filter(lead => {
+    const recentLeads = targetForm.leads.data.filter(lead => {
       const leadDate = new Date(lead.created_time);
       return leadDate >= CUTOFF_DATE;
     });
 
     log('INFO', `Found ${recentLeads.length} leads since cutoff date`, { 
       formId,
-      totalLeads: response.data.data.length,
+      formName: targetForm.name,
+      totalLeads: targetForm.leads.data.length,
       filteredLeads: recentLeads.length
     });
     
