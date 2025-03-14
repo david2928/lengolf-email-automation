@@ -24,7 +24,9 @@ class LineMessagingService {
       headers: {
         'Authorization': `Bearer ${channelAccessToken}`,
         'Content-Type': 'application/json'
-      }
+      },
+      // Add timeout to prevent hanging requests
+      timeout: 10000
     });
 
     // Log initialization
@@ -61,6 +63,24 @@ class LineMessagingService {
     }
   }
 
+  // Validate message content to ensure it meets LINE's requirements
+  validateMessage(message) {
+    if (!message) {
+      throw new Error('Message content cannot be empty');
+    }
+    
+    // LINE has a 5000 character limit for text messages
+    if (message.length > 5000) {
+      log('WARN', 'Message exceeds LINE character limit, truncating', {
+        serviceType: this.serviceType,
+        originalLength: message.length
+      });
+      return message.substring(0, 4997) + '...';
+    }
+    
+    return message;
+  }
+
   async send(message) {
     try {
       // Validate token before sending
@@ -69,11 +89,21 @@ class LineMessagingService {
         throw new Error(`LINE token is invalid`);
       }
 
+      // Validate and potentially truncate the message
+      const validatedMessage = this.validateMessage(message);
+
       // Create a text message object
       const messageObj = {
         type: 'text',
-        text: message
+        text: validatedMessage
       };
+
+      // Log the request we're about to make
+      log('DEBUG', 'Sending LINE message', {
+        serviceType: this.serviceType,
+        groupId: this.groupId,
+        messageLength: validatedMessage.length
+      });
 
       // Send to a specific group
       const response = await this.client.post('/message/push', {
@@ -100,7 +130,11 @@ class LineMessagingService {
       if (error.response?.status === 401) {
         log('ERROR', 'LINE message failed - Token unauthorized or expired', errorDetails);
       } else if (error.response?.status === 400) {
-        log('ERROR', 'LINE message failed - Bad request', errorDetails);
+        // Add more detailed error information for 400 errors
+        log('ERROR', 'LINE message failed - Bad request', {
+          ...errorDetails,
+          details: error.response?.data?.details || 'No additional details available'
+        });
       } else {
         log('ERROR', 'LINE message failed', errorDetails);
       }
@@ -122,10 +156,16 @@ class LineMessagingService {
         throw new Error(`LINE token is invalid`);
       }
 
+      // Validate text content
+      const validatedText = this.validateMessage(text);
+      
+      // Validate title (shorter limit for titles)
+      const validatedTitle = title.length > 100 ? title.substring(0, 97) + '...' : title;
+
       // Create a flex message
       const flexMessage = {
         type: 'flex',
-        altText: title,
+        altText: validatedTitle,
         contents: {
           type: 'bubble',
           header: {
@@ -134,7 +174,7 @@ class LineMessagingService {
             contents: [
               {
                 type: 'text',
-                text: title,
+                text: validatedTitle,
                 weight: 'bold',
                 size: 'xl'
               }
@@ -146,7 +186,7 @@ class LineMessagingService {
             contents: [
               {
                 type: 'text',
-                text: text,
+                text: validatedText,
                 wrap: true
               }
             ]
@@ -172,6 +212,13 @@ class LineMessagingService {
           }))
         };
       }
+
+      // Log the request we're about to make
+      log('DEBUG', 'Sending LINE rich message', {
+        serviceType: this.serviceType,
+        groupId: this.groupId,
+        title: validatedTitle
+      });
 
       const response = await this.client.post('/message/push', {
         to: this.groupId,

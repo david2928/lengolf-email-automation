@@ -1,0 +1,81 @@
+name: Refresh Meta Access Token
+
+on:
+  # Run on a schedule (every 30 days)
+  schedule:
+    - cron: '0 0 1,15 * *'  # Run at midnight on the 1st and 15th of every month
+  
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  refresh-token:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}  # Use a PAT with repo access
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Create .env file
+        run: |
+          echo "META_ACCESS_TOKEN=${{ secrets.META_ACCESS_TOKEN }}" > .env
+          echo "META_APP_ID=${{ secrets.META_APP_ID }}" >> .env
+          echo "META_APP_SECRET=${{ secrets.META_APP_SECRET }}" >> .env
+          echo "META_PAGE_ID=${{ secrets.META_PAGE_ID }}" >> .env
+          echo "META_B2B_FORM_ID=${{ secrets.META_B2B_FORM_ID }}" >> .env
+          echo "META_B2C_FORM_ID=${{ secrets.META_B2C_FORM_ID }}" >> .env
+      
+      - name: Run token refresh script
+        run: node src/scripts/refreshMetaToken.js
+      
+      - name: Extract new token from .env
+        id: extract-token
+        run: |
+          NEW_TOKEN=$(grep META_ACCESS_TOKEN .env | cut -d '=' -f2)
+          echo "::add-mask::$NEW_TOKEN"
+          echo "new_token=$NEW_TOKEN" >> $GITHUB_OUTPUT
+      
+      - name: Update META_ACCESS_TOKEN secret
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          script: |
+            const newToken = '${{ steps.extract-token.outputs.new_token }}';
+            
+            if (!newToken) {
+              core.setFailed('Failed to extract new token');
+              return;
+            }
+            
+            try {
+              await github.rest.actions.createOrUpdateRepoSecret({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                secret_name: 'META_ACCESS_TOKEN',
+                encrypted_value: Buffer.from(newToken).toString('base64'),
+                key_id: process.env.KEY_ID
+              });
+              
+              console.log('Successfully updated META_ACCESS_TOKEN secret');
+            } catch (error) {
+              core.setFailed(`Failed to update secret: ${error.message}`);
+            }
+      
+      - name: Commit and push updated .env file
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add .env
+          git commit -m "Update META_ACCESS_TOKEN [skip ci]" || echo "No changes to commit"
+          git push 

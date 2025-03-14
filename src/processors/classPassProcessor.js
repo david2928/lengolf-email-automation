@@ -5,11 +5,21 @@ const { log } = require('../utils/logging');
 class ClassPassProcessor {
   constructor(gmailService) {
     this.gmail = gmailService;
-    this.lineMessaging = new LineMessagingService(
-      process.env.LINE_CHANNEL_ACCESS_TOKEN_CLASSPASS || process.env.LINE_CHANNEL_ACCESS_TOKEN,
-      process.env.LINE_GROUP_ID_CLASSPASS || process.env.LINE_GROUP_ID,
-      'CLASSPASS'
-    );
+    
+    // Initialize LINE messaging service with proper error handling
+    try {
+      this.lineMessaging = new LineMessagingService(
+        process.env.LINE_CHANNEL_ACCESS_TOKEN_CLASSPASS || process.env.LINE_CHANNEL_ACCESS_TOKEN,
+        process.env.LINE_GROUP_ID_CLASSPASS || process.env.LINE_GROUP_ID,
+        'CLASSPASS'
+      );
+    } catch (error) {
+      log('ERROR', 'Failed to initialize LINE messaging service', {
+        error: error.message,
+        serviceType: 'CLASSPASS'
+      });
+    }
+    
     this.sourceLabel = process.env.LABEL_CLASSPASS;
     this.completedLabel = process.env.LABEL_COMPLETED;
   }
@@ -56,16 +66,29 @@ class ClassPassProcessor {
   }
 
   createLineMessage(details) {
-    return `[ClassPass Booking] ` +
+    const message = `[ClassPass Booking] ` +
            `Date: ${details.weekday}, ${details.date}, ` +
            `Time: ${details.startTime} - ${details.endTime}, ` +
            `Customer: ${details.customerName}. ` +
            `Please check bay availability and submit booking form. ` +
            `This is a ClassPass booking, no payment required at the location.`;
+    
+    // Log the message for debugging
+    log('DEBUG', 'Created LINE message', { 
+      messageLength: message.length,
+      messagePreview: message.substring(0, 100) + (message.length > 100 ? '...' : '')
+    });
+    
+    return message;
   }
 
   async processEmails() {
     try {
+      // Ensure LINE messaging service is initialized
+      if (!this.lineMessaging) {
+        throw new Error('LINE messaging service not initialized');
+      }
+      
       const threads = await this.gmail.listThreads(this.sourceLabel);
       log('INFO', 'Processing ClassPass threads', { count: threads.length });
 
@@ -78,13 +101,37 @@ class ClassPassProcessor {
           
           const details = this.extractReservationDetails(bodyText);
           if (details) {
-            const lineMessage = this.createLineMessage(details);
-            await this.lineMessaging.send(lineMessage);
-            await this.gmail.moveThread(thread.id, this.sourceLabel, this.completedLabel);
-            log('INFO', 'Processed ClassPass booking', { 
-              customer: details.customerName,
-              date: details.date,
-              time: details.startTime
+            try {
+              const lineMessage = this.createLineMessage(details);
+              
+              // Try to send the message
+              await this.lineMessaging.send(lineMessage);
+              
+              // If successful, move the thread
+              await this.gmail.moveThread(thread.id, this.sourceLabel, this.completedLabel);
+              log('INFO', 'Processed ClassPass booking', { 
+                customer: details.customerName,
+                date: details.date,
+                time: details.startTime
+              });
+            } catch (sendError) {
+              // Handle LINE messaging error specifically
+              log('ERROR', 'Failed to send LINE message for ClassPass booking', {
+                error: sendError.message,
+                customer: details.customerName,
+                date: details.date,
+                time: details.startTime,
+                // Don't move the thread so we can retry later
+                threadId: thread.id
+              });
+              
+              // Re-throw to be caught by the outer catch
+              throw sendError;
+            }
+          } else {
+            log('WARN', 'Could not extract reservation details from ClassPass email', {
+              threadId: thread.id,
+              messageId: message.id
             });
           }
         }

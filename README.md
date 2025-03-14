@@ -209,3 +209,74 @@ Note: You only need a single channel access token for all groups. The system wil
 - Can send rich messages with buttons and formatting
 - Different lead sources can send to different LINE groups
 - Error handling and retry logic built-in
+
+# Meta Access Token Management
+
+The application includes an automated system for managing Meta (Facebook) access tokens to prevent expiration issues. This system handles:
+
+1. Validating existing tokens
+2. Extending short-lived tokens to long-lived tokens (~60 days validity)
+3. Refreshing tokens before they expire
+4. Updating the `.env` file with new tokens
+
+## Setup Requirements
+
+To enable automatic token management, you need to add the following to your `.env` file:
+
+```
+META_APP_ID=YOUR_FACEBOOK_APP_ID
+META_APP_SECRET=YOUR_FACEBOOK_APP_SECRET
+```
+
+You can obtain these credentials from your Facebook Developer account:
+
+1. Go to [developers.facebook.com](https://developers.facebook.com/)
+2. Navigate to your app
+3. Go to Settings > Basic to find your App ID and App Secret
+
+## How Token Management Works
+
+The system works in three ways:
+
+### 1. Integrated in Application
+
+The application checks token validity on startup and refreshes it if needed. This happens automatically when you run the application.
+
+### 2. Manual Refresh Script
+
+You can manually refresh the token by running:
+
+```bash
+node src/scripts/refreshMetaToken.js
+```
+
+### 3. Automated GitHub Actions Workflow
+
+A GitHub Actions workflow is included that:
+- Runs on the 1st and 15th of each month
+- Checks token validity
+- Refreshes the token if needed
+- Updates the GitHub repository secrets
+- Commits the updated `.env` file
+
+To set up the GitHub Actions workflow:
+
+1. Add the following secrets to your GitHub repository:
+   - `REPO_ACCESS_TOKEN`: A Personal Access Token with repo access
+   - `META_ACCESS_TOKEN`: Your current Meta access token
+   - `META_APP_ID`: Your Facebook App ID
+   - `META_APP_SECRET`: Your Facebook App Secret
+   - `META_PAGE_ID`: Your Facebook Page ID
+   - `META_B2B_FORM_ID`: Your B2B form ID
+   - `META_B2C_FORM_ID`: Your B2C form ID
+
+2. The workflow will automatically run on schedule, or you can manually trigger it from the Actions tab.
+
+## Troubleshooting
+
+If you encounter token-related issues:
+
+1. Check that your App ID and App Secret are correct
+2. Verify that your app has the necessary permissions
+3. Try running the refresh script manually to see detailed error messages
+4. Check the GitHub Actions logs if using the automated workflow

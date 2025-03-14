@@ -5,6 +5,7 @@ const { GmailService } = require('./services/gmailService');
 const { ClassPassProcessor } = require('./processors/classPassProcessor');
 const { WebResosProcessor } = require('./processors/webResosProcessor');
 const { FacebookProcessor } = require('./processors/facebookProcessor');
+const { MetaTokenManager } = require('./utils/metaTokenManager');
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -26,8 +27,40 @@ async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Check and refresh Meta access token if needed
+ */
+async function checkMetaAccessToken() {
+    try {
+        // Only attempt token management if app credentials are available
+        if (process.env.META_APP_ID && process.env.META_APP_SECRET) {
+            log('INFO', 'Checking Meta access token validity');
+            const tokenManager = new MetaTokenManager();
+            const isValid = await tokenManager.isTokenValid();
+            
+            if (!isValid) {
+                log('WARN', 'Meta access token is invalid or expiring soon, refreshing');
+                await tokenManager.manageToken();
+                log('INFO', 'Meta access token refreshed successfully');
+            } else {
+                log('INFO', 'Meta access token is valid');
+            }
+        } else {
+            log('WARN', 'Meta app credentials not found, skipping token validation');
+        }
+    } catch (error) {
+        log('ERROR', 'Failed to check/refresh Meta access token', {
+            error: error.message
+        });
+        // Continue execution even if token refresh fails
+    }
+}
+
 async function initializeServices(retryCount = 0) {
     try {
+        // Check Meta access token before initializing services
+        await checkMetaAccessToken();
+        
         const auth = await getAuth();
         return new GmailService(auth);
     } catch (error) {
