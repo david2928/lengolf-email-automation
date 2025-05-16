@@ -47,11 +47,11 @@ jobs:
           echo "new_token=$NEW_TOKEN" >> $GITHUB_OUTPUT
       
       - name: Update META_ACCESS_TOKEN repository secret
-        uses: ammaraskar/create-or-update-a-secret-action@v1.2.0
+        uses: gliech/create-github-secret-action@v1
         with:
-          ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
-          SECRET_NAME: 'META_ACCESS_TOKEN'
-          SECRET_VALUE: ${{ steps.extract-token.outputs.new_token }}
+          name: 'META_ACCESS_TOKEN'
+          value: ${{ steps.extract-token.outputs.new_token }}
+          pa_token: ${{ secrets.REPO_ACCESS_TOKEN }}
       
       - name: Commit and push updated .env file
         run: |
