@@ -63,8 +63,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 secret_name: 'META_ACCESS_TOKEN',
-                encrypted_value: Buffer.from(newToken).toString('base64'),
-                key_id: process.env.KEY_ID
+                encrypted_value: newToken
               });
               
               console.log('Successfully updated META_ACCESS_TOKEN secret');
