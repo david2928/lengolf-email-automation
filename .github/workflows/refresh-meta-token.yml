@@ -53,10 +53,4 @@ jobs:
           value: ${{ steps.extract-token.outputs.new_token }}
           pa_token: ${{ secrets.REPO_ACCESS_TOKEN }}
       
-      - name: Commit and push updated .env file
-        run: |
-          git config --global user.name "GitHub Actions Bot"
-          git config --global user.email "actions@github.com"
-          git add .env
-          git commit -m "Update META_ACCESS_TOKEN [skip ci]" || echo "No changes to commit"
-          git push 
+# Commit and push updated .env file step is removed as it's redundant and causes issues with .gitignore. 
