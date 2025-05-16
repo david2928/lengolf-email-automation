@@ -46,30 +46,12 @@ jobs:
           echo "::add-mask::$NEW_TOKEN"
           echo "new_token=$NEW_TOKEN" >> $GITHUB_OUTPUT
       
-      - name: Update META_ACCESS_TOKEN secret
-        uses: actions/github-script@v6
+      - name: Update META_ACCESS_TOKEN repository secret
+        uses: ammaraskar/create-or-update-a-secret-action@v1.2.0
         with:
-          github-token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          script: |
-            const newToken = '${{ steps.extract-token.outputs.new_token }}';
-            
-            if (!newToken) {
-              core.setFailed('Failed to extract new token');
-              return;
-            }
-            
-            try {
-              await github.rest.actions.createOrUpdateRepoSecret({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                secret_name: 'META_ACCESS_TOKEN',
-                encrypted_value: Buffer.from(newToken).toString('base64')
-              });
-              
-              console.log('Successfully updated META_ACCESS_TOKEN secret');
-            } catch (error) {
-              core.setFailed(`Failed to update secret: ${error.message}`);
-            }
+          ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
+          SECRET_NAME: 'META_ACCESS_TOKEN'
+          SECRET_VALUE: ${{ steps.extract-token.outputs.new_token }}
       
       - name: Commit and push updated .env file
         run: |
