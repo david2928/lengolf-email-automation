@@ -12,7 +12,7 @@ try {
 // Initialize Vertex AI with your Google Cloud project and location
 const PROJECT_ID = process.env.PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT;
 const LOCATION = process.env.VERTEX_LOCATION || 'us-central1';
-const MODEL_NAME = 'gemini-1.0-pro';
+const MODEL_NAME = 'gemini-2.0-flash-001'; // Updated to current stable model (Apr 2025)
 
 // Spam detection prompt template
 const SPAM_DETECTION_PROMPT = `
