@@ -52,5 +52,17 @@ jobs:
           name: 'META_ACCESS_TOKEN'
           value: ${{ steps.extract-token.outputs.new_token }}
           pa_token: ${{ secrets.REPO_ACCESS_TOKEN }}
-      
+
+      - name: Trigger deployment workflow
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'meta-token-refreshed'
+            });
+            console.log('Successfully dispatched meta-token-refreshed event to trigger deployment.');
+
 # Commit and push updated .env file step is removed as it's redundant and causes issues with .gitignore. 

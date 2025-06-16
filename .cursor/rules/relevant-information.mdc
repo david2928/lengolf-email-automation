@@ -1,0 +1,13 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Information
+
+-   **Project Name:** `info@len.golf's Project`
+-   **Project ID (Reference):** `bisimqmtxjsptehhqpeg`
+-   **Managed Cloud Platform (MCP) Access:** MCP access is available and configured for this project.
+    -   This allows for direct interaction with cloud services (e.g., Supabase) via automated tooling when required.
+
+

@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "supabase_booking": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token",
+        "sbp_4a7b3363ee6de35786a1fff556286c59c47396e9"
+      ]
+    }
+  }
+}

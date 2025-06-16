@@ -4,6 +4,8 @@ on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
+  repository_dispatch:
+    types: [meta-token-refreshed]
 
 jobs:
   deploy:
