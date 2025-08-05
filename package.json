@@ -5,6 +5,7 @@
     "@google-cloud/local-auth": "^2.1.0",
     "@google-cloud/secret-manager": "^5.0.1",
     "@google-cloud/vertexai": "^0.4.0",
+    "@supabase/mcp-server-supabase": "^0.4.5",
     "@supabase/supabase-js": "^2.39.1",
     "axios": "^1.6.2",
     "csv-writer": "^1.6.0",

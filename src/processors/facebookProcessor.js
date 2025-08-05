@@ -29,14 +29,14 @@ class FacebookProcessor {
             .from('processed_leads')
             .select('lead_id')
             .eq('lead_id', leadId)
-            .single();
+            .limit(1);
 
-        if (error && error.code !== 'PGRST116') {
+        if (error) {
             log('ERROR', 'Error checking lead existence', { error: error.message, leadId });
             throw error;
         }
 
-        return !!data;
+        return data && data.length > 0;
     }
 
     async addToSupabase(data, leadDetails, processedLead) {
