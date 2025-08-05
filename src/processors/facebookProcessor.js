@@ -111,53 +111,12 @@ class FacebookProcessor {
     }
 
     async addToSheet(data) {
-        try {
-            if (!this.sheets) await this.setupSheetsClient();
-
-            const mainSheetValues = [
-                data.isB2B ? 'Facebook B2B' : 'Facebook B2C',  // Lead Source
-                data.createdTime,                              // Created Time
-                data.fullName,                                 // Full Name
-                data.phoneNumber,                              // Phone Number
-                data.email                                     // Email
-            ];
-
-            await this.sheets.spreadsheets.values.append({
-                spreadsheetId: this.sheetId,
-                range: 'Sheet1!A:E',
-                valueInputOption: 'USER_ENTERED',
-                requestBody: { values: [mainSheetValues] }
-            });
-
-            if (data.isB2B && this.b2bSheetId) {
-                const b2bSheetValues = [
-                    data.companyName || '',           // Company
-                    data.fullName || '',              // Contact Name
-                    data.phoneNumber || '',           // Contact Number
-                    data.email || '',                 // Contact Email
-                    'Facebook Lead',                  // Contact Via
-                    'Received'                        // Status
-                ];
-
-                await this.sheets.spreadsheets.values.append({
-                    spreadsheetId: this.b2bSheetId,
-                    range: 'Sheet1!A:F',              // Updated range to only include first 6 columns
-                    valueInputOption: 'USER_ENTERED',
-                    requestBody: { values: [b2bSheetValues] }
-                });
-            }
-            log('INFO', 'Added lead to Google Sheets', { 
-                fullName: data.fullName,
-                isB2B: data.isB2B
-            });
-            return true;
-        } catch (error) {
-            log('ERROR', 'Error adding to sheet(s)', { 
-                error: error.message,
-                fullName: data.fullName
-            });
-            throw error;
-        }
+        // Google Sheets integration removed - all leads now use feedback form
+        log('INFO', 'Skipping Google Sheets integration', { 
+            fullName: data.fullName,
+            leadType: data.isB2B ? 'B2B' : 'B2C'
+        });
+        return true;
     }
 
     async processNewLeads() {
@@ -228,11 +187,8 @@ class FacebookProcessor {
                                     });
                                 }
                                 
-                                await this.addToSheet({
-                                    ...leadDetails,
-                                    ...processedLead,
-                                    isB2B: type === 'b2b'
-                                });
+                                // Google Sheets integration removed
+                                // All feedback now goes through https://lengolf-forms.vercel.app/lead-feedback
                                 
                                 processedCount++;
                             }

@@ -56,9 +56,6 @@ class FacebookB2BProcessor {
         if (data.eventDuration) message += `Event Duration: ${data.eventDuration}\n`;
         if (data.specialRequirements) message += `Special Requirements: ${data.specialRequirements}\n`;
 
-        message += `\n📝 Please call back this B2B lead and follow up.\n`;
-        message += `Status and outcome should be logged via `;
-        message += `https://docs.google.com/spreadsheets/d/${this.b2bSheetId}/edit?usp=sharing`;
 
         return message;
     }

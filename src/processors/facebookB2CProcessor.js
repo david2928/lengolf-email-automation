@@ -52,7 +52,7 @@ class FacebookB2CProcessor {
 
         message += `\n📝 Please call back this lead and follow up.\n`;
         message += `Status and outcome should be logged via `;
-        message += `https://docs.google.com/spreadsheets/d/${process.env.FACEBOOK_SHEET_ID}/edit?usp=sharing`;
+        message += `https://lengolf-forms.vercel.app/lead-feedback`;
 
         return message;
     }
