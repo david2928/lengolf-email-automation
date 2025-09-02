@@ -59,7 +59,8 @@ class WebResosProcessor {
       log('DEBUG', 'Processing ResOS email body text', { bodyText });
       
       const dateMatch = bodyText.match(/Date\s*(.*?\d{4})/i);
-      const timeMatch = bodyText.match(/Time\s(\d{2}:\d{2}) - (\d{2}:\d{2})/i);
+      // Handle both 24-hour format (12:00 - 13:00) and 12-hour format (12:00 PM - 1:00 PM)
+      const timeMatch = bodyText.match(/Time\s*(\d{1,2}:\d{2}(?:\s?[AP]M)?)\s*-\s*(\d{1,2}:\d{2}(?:\s?[AP]M)?)/i);
       const peopleMatch = bodyText.match(/People\s*(\d+)/i);
       const nameMatch = bodyText.match(/Name\s*(.*?)(?=\s+(?:Phone|Email))/i);
       const phoneMatch = bodyText.match(/Phone\s*(\+\d+\s*\d+\s*\d+\s*\d+)/i);
