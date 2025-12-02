@@ -83,6 +83,20 @@ class EmailTrackingService {
         throw new Error(`Invalid actionTaken: ${actionTaken}. Must be one of: ${validActions.join(', ')}`);
       }
 
+      // Parse email date from RFC 2822 format to PostgreSQL-compatible ISO format
+      let parsedEmailDate = null;
+      if (emailMetadata.date) {
+        try {
+          parsedEmailDate = new Date(emailMetadata.date).toISOString();
+        } catch (dateError) {
+          log('WARN', 'Failed to parse email date, storing as null', {
+            gmailMessageId,
+            rawDate: emailMetadata.date,
+            error: dateError.message
+          });
+        }
+      }
+
       const record = {
         gmail_message_id: gmailMessageId,
         source_type: sourceType,
@@ -90,7 +104,7 @@ class EmailTrackingService {
         booking_id: bookingId,
         error_message: errorMessage,
         email_subject: emailMetadata.subject || null,
-        email_date: emailMetadata.date || null
+        email_date: parsedEmailDate
       };
 
       const { data, error } = await this.supabase
