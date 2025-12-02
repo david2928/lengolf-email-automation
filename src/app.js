@@ -6,6 +6,7 @@ const { ClassPassProcessor } = require('./processors/classPassProcessor');
 const { WebResosProcessor } = require('./processors/webResosProcessor');
 const { FacebookProcessor } = require('./processors/facebookProcessor');
 const { MetaTokenManager } = require('./utils/metaTokenManager');
+const { supabase } = require('./lib/supabase');
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -101,8 +102,8 @@ async function processLeads() {
     try {
         const gmailService = await initializeServices();
         const processors = {
-            classPass: new ClassPassProcessor(gmailService),
-            webResos: new WebResosProcessor(gmailService),
+            classPass: new ClassPassProcessor(gmailService, supabase),
+            webResos: new WebResosProcessor(gmailService, supabase),
             facebook: new FacebookProcessor(gmailService)
         };
 
