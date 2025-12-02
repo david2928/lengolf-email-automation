@@ -4,8 +4,6 @@ const { getAuth } = require('./utils/auth');
 const { GmailService } = require('./services/gmailService');
 const { ClassPassProcessor } = require('./processors/classPassProcessor');
 const { WebResosProcessor } = require('./processors/webResosProcessor');
-const { FacebookProcessor } = require('./processors/facebookProcessor');
-const { MetaTokenManager } = require('./utils/metaTokenManager');
 const { supabase } = require('./lib/supabase');
 
 const app = express();
@@ -28,52 +26,20 @@ async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/**
- * Check and refresh Meta access token if needed
- */
-async function checkMetaAccessToken() {
-    try {
-        // Only attempt token management if app credentials are available
-        if (process.env.META_APP_ID && process.env.META_APP_SECRET) {
-            log('INFO', 'Checking Meta access token validity');
-            const tokenManager = new MetaTokenManager();
-            const isValid = await tokenManager.isTokenValid();
-            
-            if (!isValid) {
-                log('WARN', 'Meta access token is invalid or expiring soon, refreshing');
-                await tokenManager.manageToken();
-                log('INFO', 'Meta access token refreshed successfully');
-            } else {
-                log('INFO', 'Meta access token is valid');
-            }
-        } else {
-            log('WARN', 'Meta app credentials not found, skipping token validation');
-        }
-    } catch (error) {
-        log('ERROR', 'Failed to check/refresh Meta access token', {
-            error: error.message
-        });
-        // Continue execution even if token refresh fails
-    }
-}
-
 async function initializeServices(retryCount = 0) {
     try {
-        // Check Meta access token before initializing services
-        await checkMetaAccessToken();
-        
         const auth = await getAuth();
         return new GmailService(auth);
     } catch (error) {
         if (retryCount < MAX_RETRIES) {
-            log('WARNING', 'Authentication failed, retrying', {
+            log('WARNING', 'Gmail authentication failed, retrying', {
                 attempt: retryCount + 1,
                 error: error.message
             });
             await sleep(RETRY_DELAY);
             return initializeServices(retryCount + 1);
         }
-        throw new Error('Authentication failed after max retries');
+        throw new Error('Gmail authentication failed after max retries');
     }
 }
 
@@ -81,8 +47,7 @@ async function processLeadsWithRetry(processors, retryCount = 0) {
     try {
         await Promise.all([
             processors.classPass.processEmails(),
-            processors.webResos.processEmails(),
-            processors.facebook.processNewLeads()
+            processors.webResos.processEmails()
         ]);
         return true;
     } catch (error) {
@@ -103,16 +68,15 @@ async function processLeads() {
         const gmailService = await initializeServices();
         const processors = {
             classPass: new ClassPassProcessor(gmailService, supabase),
-            webResos: new WebResosProcessor(gmailService, supabase),
-            facebook: new FacebookProcessor(gmailService)
+            webResos: new WebResosProcessor(gmailService, supabase)
         };
 
-        log('INFO', 'Starting lead processing');
+        log('INFO', 'Starting booking automation - processing ClassPass and ResOS emails');
         await processLeadsWithRetry(processors);
-        log('INFO', 'Lead processing completed successfully');
+        log('INFO', 'Booking automation completed successfully');
         return true;
     } catch (error) {
-        log('ERROR', 'Error processing leads', {
+        log('ERROR', 'Error processing bookings', {
             error: error.message,
             stack: error.stack
         });
