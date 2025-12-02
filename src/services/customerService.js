@@ -286,69 +286,107 @@ class CustomerService {
    * @returns {Promise<object>} - Created customer record
    */
   async createCustomer(customerData) {
-    try {
-      const { name, phone, email } = customerData;
+    const MAX_RETRIES = 5;
+    let attempt = 0;
 
-      if (!name) {
-        throw new Error('Customer name is required');
-      }
+    while (attempt < MAX_RETRIES) {
+      try {
+        const { name, phone, email } = customerData;
 
-      if (!phone && !email) {
-        throw new Error('At least one contact method (phone or email) is required');
-      }
-
-      // Generate customer code
-      const customerCode = await this.generateCustomerCode();
-
-      // Normalize phone
-      const normalizedPhone = phone ? this.normalizePhone(phone) : null;
-
-      const newCustomer = {
-        customer_code: customerCode,
-        customer_name: name,
-        contact_number: phone || null,
-        email: email || null,
-        normalized_phone: normalizedPhone,
-        is_active: true,
-        preferred_contact_method: phone ? 'Phone' : 'Email'
-      };
-
-      const { data, error } = await this.supabase
-        .from('customers')
-        .insert(newCustomer)
-        .select()
-        .single();
-
-      if (error) {
-        // Check for duplicate phone number
-        if (error.code === '23505' && error.message.includes('normalized_phone')) {
-          log('WARN', 'Customer with this phone number already exists', {
-            phone,
-            normalizedPhone
-          });
-          throw new Error('DUPLICATE_PHONE');
+        if (!name) {
+          throw new Error('Customer name is required');
         }
 
-        log('ERROR', 'Error creating customer', {
-          customerData,
-          error: error.message
+        if (!phone && !email) {
+          throw new Error('At least one contact method (phone or email) is required');
+        }
+
+        // Generate customer code
+        const customerCode = await this.generateCustomerCode();
+
+        // Normalize phone
+        const normalizedPhone = phone ? this.normalizePhone(phone) : null;
+
+        const newCustomer = {
+          customer_code: customerCode,
+          customer_name: name,
+          contact_number: phone || null,
+          email: email || null,
+          normalized_phone: normalizedPhone,
+          is_active: true,
+          preferred_contact_method: phone ? 'Phone' : 'Email'
+        };
+
+        const { data, error } = await this.supabase
+          .from('customers')
+          .insert(newCustomer)
+          .select()
+          .single();
+
+        if (error) {
+          // Check for duplicate phone number
+          if (error.code === '23505' && error.message.includes('normalized_phone')) {
+            log('WARN', 'Customer with this phone number already exists', {
+              phone,
+              normalizedPhone
+            });
+            throw new Error('DUPLICATE_PHONE');
+          }
+
+          // Check for duplicate customer_code (race condition)
+          if (error.code === '23505' && error.message.includes('customer_code')) {
+            attempt++;
+            if (attempt < MAX_RETRIES) {
+              log('WARN', 'Customer code collision detected, retrying', {
+                attempt,
+                customerCode
+              });
+              // Add small random delay to reduce collision probability
+              await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
+              continue; // Retry with new code
+            } else {
+              log('ERROR', 'Failed to create customer after max retries', {
+                customerData,
+                maxRetries: MAX_RETRIES
+              });
+              throw new Error('Failed to generate unique customer code after multiple attempts');
+            }
+          }
+
+          log('ERROR', 'Error creating customer', {
+            customerData,
+            error: error.message
+          });
+          throw error;
+        }
+
+        log('INFO', 'Customer created successfully', {
+          customerId: data.id,
+          customerCode: data.customer_code,
+          customerName: data.customer_name,
+          attemptsNeeded: attempt + 1
         });
-        throw error;
+
+        return data;
+      } catch (error) {
+        // Only retry on customer_code collision, re-throw other errors
+        if (error.message === 'DUPLICATE_PHONE' ||
+            (error.code !== '23505' && !error.message.includes('customer_code'))) {
+          log('ERROR', 'Failed to create customer', {
+            customerData,
+            error: error.message
+          });
+          throw error;
+        }
+        // If we get here on last attempt, throw
+        if (attempt >= MAX_RETRIES - 1) {
+          log('ERROR', 'Failed to create customer after retries', {
+            customerData,
+            error: error.message
+          });
+          throw error;
+        }
       }
-
-      log('INFO', 'Customer created successfully', {
-        customerId: data.id,
-        customerCode: data.customer_code,
-        customerName: data.customer_name
-      });
-
-      return data;
-    } catch (error) {
-      log('ERROR', 'Failed to create customer', {
-        customerData,
-        error: error.message
-      });
-      throw error;
     }
   }
 
