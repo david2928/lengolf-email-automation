@@ -244,30 +244,38 @@ class CustomerService {
    */
   async generateCustomerCode() {
     try {
-      // Get the highest customer code
+      // Get all customer codes to find the highest number
       const { data, error } = await this.supabase
         .from('customers')
         .select('customer_code')
-        .order('customer_code', { ascending: false })
-        .limit(1);
+        .like('customer_code', 'CUS-%');
 
       if (error) {
         throw error;
       }
 
-      // Extract number from highest code (e.g., "CUS-123" -> 123)
-      let nextNumber = 1;
-      if (data && data.length > 0 && data[0].customer_code) {
-        const match = data[0].customer_code.match(/CUS-(\d+)/);
-        if (match) {
-          nextNumber = parseInt(match[1], 10) + 1;
-        }
+      // Extract numbers from all codes and find the maximum
+      let maxNumber = 0;
+      if (data && data.length > 0) {
+        data.forEach(row => {
+          if (row.customer_code) {
+            const match = row.customer_code.match(/CUS-(\d+)/);
+            if (match) {
+              const num = parseInt(match[1], 10);
+              if (num > maxNumber) {
+                maxNumber = num;
+              }
+            }
+          }
+        });
       }
+
+      const nextNumber = maxNumber + 1;
 
       // Format as CUS-001, CUS-002, etc.
       const customerCode = `CUS-${String(nextNumber).padStart(3, '0')}`;
 
-      log('DEBUG', 'Generated customer code', { customerCode });
+      log('DEBUG', 'Generated customer code', { customerCode, maxNumber, nextNumber });
       return customerCode;
     } catch (error) {
       log('ERROR', 'Failed to generate customer code', {
