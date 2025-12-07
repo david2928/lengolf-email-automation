@@ -240,42 +240,22 @@ class CustomerService {
 
   /**
    * Generate next customer code (CUS-001, CUS-002, etc.)
+   * Uses PostgreSQL sequence for atomic, race-condition-free generation
    * @returns {Promise<string>} - Next customer code
    */
   async generateCustomerCode() {
     try {
-      // Get all customer codes to find the highest number
+      // Use database sequence for atomic customer code generation
       const { data, error } = await this.supabase
-        .from('customers')
-        .select('customer_code')
-        .like('customer_code', 'CUS-%');
+        .rpc('generate_next_customer_code');
 
       if (error) {
         throw error;
       }
 
-      // Extract numbers from all codes and find the maximum
-      let maxNumber = 0;
-      if (data && data.length > 0) {
-        data.forEach(row => {
-          if (row.customer_code) {
-            const match = row.customer_code.match(/CUS-(\d+)/);
-            if (match) {
-              const num = parseInt(match[1], 10);
-              if (num > maxNumber) {
-                maxNumber = num;
-              }
-            }
-          }
-        });
-      }
+      const customerCode = data;
 
-      const nextNumber = maxNumber + 1;
-
-      // Format as CUS-001, CUS-002, etc.
-      const customerCode = `CUS-${String(nextNumber).padStart(3, '0')}`;
-
-      log('DEBUG', 'Generated customer code', { customerCode, maxNumber, nextNumber });
+      log('DEBUG', 'Generated customer code from sequence', { customerCode });
       return customerCode;
     } catch (error) {
       log('ERROR', 'Failed to generate customer code', {
