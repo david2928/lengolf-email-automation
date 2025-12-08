@@ -366,7 +366,7 @@ class BookingService {
       // Create booking record
       const newBooking = {
         id: bookingId,
-        user_id: userId || '00000000-0000-0000-0000-000000000000', // Default system user ID
+        user_id: userId || '0eb32c8b-b2eb-4c8d-ba19-fc4f8e15f4c7', // Default guest user ID
         customer_id: customerId || null,
         name: customerName,
         phone_number: customerPhone,
