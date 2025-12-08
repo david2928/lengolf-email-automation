@@ -357,7 +357,7 @@ class WebResosProcessor {
         startTime: bookingData.startTime
       });
 
-      // Find booking by customer details and time
+      // Find booking by customer details and time (search all bookings, not just automation-created)
       const startTime24h = this.convertTo24Hour(bookingData.startTime);
       const booking = await this.bookingService.findBookingByDetails(
         bookingData.customerName,
@@ -365,7 +365,7 @@ class WebResosProcessor {
         bookingData.customerEmail,
         bookingData.date,
         startTime24h,
-        'ResOS'
+        null // Don't filter by source - find any booking matching customer/time
       );
 
       if (!booking) {

@@ -314,7 +314,7 @@ class ClassPassProcessor {
           details.customerEmail,
           details.date,
           startTime24h,
-          'ClassPass'
+          null // Don't filter by source - find any booking matching customer/time
         );
       }
 
