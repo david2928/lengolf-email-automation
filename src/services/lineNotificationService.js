@@ -22,17 +22,21 @@ class LineNotificationService {
   }
 
   /**
-   * Format date to "Weekday, Day Month" format (e.g., "Monday, 1 December")
+   * Format date to "Day, DDth Month" format (e.g., "Sat, 13th December")
    * @param {string} dateString - Date in YYYY-MM-DD format
    * @returns {string} - Formatted date
    */
   formatDate(dateString) {
     try {
       const date = new Date(dateString);
-      const weekday = date.toLocaleDateString("en-US", { weekday: 'long' });
+      const weekday = date.toLocaleDateString("en-US", { weekday: 'short' }); // Short weekday (Mon, Tue, etc.)
       const day = date.getDate();
       const month = date.toLocaleDateString("en-US", { month: 'long' });
-      return `${weekday}, ${day} ${month}`;
+
+      // Add ordinal suffix (1st, 2nd, 3rd, 4th, etc.)
+      const suffix = this.getOrdinalSuffix(day);
+
+      return `${weekday}, ${day}${suffix} ${month}`;
     } catch (error) {
       log('WARN', 'Failed to format date', { dateString, error: error.message });
       return dateString; // Return original if parsing fails
@@ -40,21 +44,33 @@ class LineNotificationService {
   }
 
   /**
-   * Format time to "H:mm AM/PM" format (e.g., "2:00 PM")
-   * Accepts both 12-hour and 24-hour formats
+   * Get ordinal suffix for a number (st, nd, rd, th)
+   * @param {number} day - Day of month
+   * @returns {string} - Ordinal suffix
+   */
+  getOrdinalSuffix(day) {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  }
+
+  /**
+   * Format time to 24-hour format (e.g., "14:00")
+   * Ensures consistent HH:mm format
    * @param {string} timeString - Time in HH:mm format (24-hour)
-   * @returns {string} - Formatted time in 12-hour format
+   * @returns {string} - Formatted time in 24-hour format
    */
   formatTime(timeString) {
     try {
       // Parse HH:mm format (24-hour)
       const [hours, minutes] = timeString.split(':').map(Number);
 
-      // Convert to 12-hour format
-      const period = hours >= 12 ? 'PM' : 'AM';
-      const displayHours = hours % 12 || 12; // 0 becomes 12
-
-      return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+      // Keep in 24-hour format
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     } catch (error) {
       log('WARN', 'Failed to format time', { timeString, error: error.message });
       return timeString; // Return original if parsing fails
@@ -65,7 +81,7 @@ class LineNotificationService {
    * Calculate end time from start time and duration
    * @param {string} startTime - Start time in HH:mm format (24-hour)
    * @param {number} duration - Duration in hours
-   * @returns {string} - End time in 12-hour format
+   * @returns {string} - End time in 24-hour format
    */
   calculateEndTime(startTime, duration) {
     try {
@@ -77,7 +93,7 @@ class LineNotificationService {
       const endHours = Math.floor(endMinutes / 60) % 24;
       const endMins = endMinutes % 60;
 
-      return this.formatTime(`${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`);
+      return `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
     } catch (error) {
       log('ERROR', 'Failed to calculate end time', {
         startTime,
@@ -115,16 +131,18 @@ class LineNotificationService {
 
     // Build notification message (matches lengolf-forms format)
     let message = `Booking Notification (ID: ${bookingId})\n`;
-    message += `Name: ${customerName}\n`;
-    message += `Phone: ${customerPhone}\n`;
+    message += `Customer Name: ${customerName}\n`;
+    message += `Booking Name: ${customerName}\n`;
 
     if (customerEmail) {
       message += `Email: ${customerEmail}\n`;
     }
 
+    message += `Phone: ${customerPhone}\n`;
     message += `Date: ${formattedDate}\n`;
     message += `Time: ${formattedStartTime} - ${formattedEndTime}\n`;
     message += `Bay: ${bay}\n`;
+    message += `Type: Normal Bay Rate\n`;
     message += `People: ${numberOfPeople}\n`;
     message += `Channel: ${channel}`;
 
