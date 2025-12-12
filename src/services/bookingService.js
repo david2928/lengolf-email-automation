@@ -19,7 +19,7 @@ class BookingService {
       AI: ['Bay 4']
     };
     this.MAX_PEOPLE_SOCIAL = 5;
-    this.MAX_PEOPLE_AI = 2;
+    this.MAX_PEOPLE_AI = 1; // Bay 4 is for single players only
   }
 
   /**
