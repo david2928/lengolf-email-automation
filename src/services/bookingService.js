@@ -19,7 +19,7 @@ class BookingService {
       AI: ['Bay 4']
     };
     this.MAX_PEOPLE_SOCIAL = 5;
-    this.MAX_PEOPLE_AI = 1; // Bay 4 is for single players only
+    this.MAX_PEOPLE_AI = 2; // Bay 4 allows up to 2 players
   }
 
   /**
@@ -190,11 +190,14 @@ class BookingService {
       // Determine bay preference based on party size
       let bayPreferences;
 
-      if (numberOfPeople <= this.MAX_PEOPLE_AI) {
-        // Small groups: try AI bay first, then social bays
+      if (numberOfPeople === 1) {
+        // Single player: prefer AI bay (Bay 4), then social bays
         bayPreferences = [...this.BAYS.AI, ...this.BAYS.SOCIAL];
+      } else if (numberOfPeople === 2) {
+        // Two players: prefer social bays, but can use AI bay (Bay 4) if social are full
+        bayPreferences = [...this.BAYS.SOCIAL, ...this.BAYS.AI];
       } else if (numberOfPeople <= this.MAX_PEOPLE_SOCIAL) {
-        // Larger groups: social bays only
+        // Larger groups (3-5): social bays only
         bayPreferences = this.BAYS.SOCIAL;
       } else {
         // Group too large for any bay
