@@ -341,8 +341,22 @@ class BookingService {
       } = bookingData;
 
       // Validate required fields
-      if (!customerName || !customerPhone || !date || !startTime || !duration || !numberOfPeople) {
+      if (!customerName || (!customerPhone && !customerEmail) || !date || !startTime || !duration || !numberOfPeople) {
         throw new Error('Missing required booking fields');
+      }
+
+      // Generate dummy phone if missing (format: 0000 + MMDD + random 4 digits)
+      // This satisfies the NOT NULL constraint while indicating it's not a real number
+      let finalPhoneNumber = customerPhone;
+      if (!finalPhoneNumber) {
+        const today = new Date();
+        const mmdd = String(today.getMonth() + 1).padStart(2, '0') + String(today.getDate()).padStart(2, '0');
+        const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+        finalPhoneNumber = `0000${mmdd}${random}`;
+        log('INFO', 'Generated dummy phone number for booking', { 
+          customerName, 
+          generatedPhone: finalPhoneNumber 
+        });
       }
 
       // Parse and validate time
@@ -372,7 +386,7 @@ class BookingService {
         user_id: userId || '0eb32c8b-b2eb-4c8d-ba19-fc4f8e15f4c7', // Default guest user ID
         customer_id: customerId || null,
         name: customerName,
-        phone_number: customerPhone,
+        phone_number: finalPhoneNumber,
         email: customerEmail || '',
         date,
         start_time: standardStartTime,
