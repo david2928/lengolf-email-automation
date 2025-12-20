@@ -11,7 +11,7 @@ const port = process.env.PORT || 8080;
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 60 * 1000;
-const PROCESSING_INTERVAL = 15 * 60 * 1000;
+const PROCESSING_INTERVAL = 5 * 60 * 1000;
 
 const log = (severity, message, metadata = {}) => {
     console.log(JSON.stringify({
