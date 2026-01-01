@@ -358,6 +358,9 @@ class BookingService {
       // Generate booking ID
       const bookingId = this.generateBookingId(date);
 
+      // Determine booking type based on channel
+      const bookingType = customerContactedVia === 'ClassPass' ? 'ClassPass' : 'Normal Bay Rate';
+
       // Create booking record
       const newBooking = {
         id: bookingId,
@@ -371,6 +374,7 @@ class BookingService {
         duration,
         number_of_people: numberOfPeople,
         bay: assignedBay,
+        booking_type: bookingType,
         status: 'confirmed',
         customer_contacted_via: customerContactedVia || 'Email Automation',
         reservation_key: reservationKey,
