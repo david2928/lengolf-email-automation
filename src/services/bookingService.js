@@ -243,39 +243,17 @@ class BookingService {
   }
 
   /**
-   * Generate booking ID in format BK20251201001
+   * Generate booking ID in format BK260101DUCK (matches lengolf-forms)
    * @param {string} date - Date in YYYY-MM-DD format
-   * @returns {Promise<string>} - Generated booking ID
+   * @returns {string} - Generated booking ID
    */
-  async generateBookingId(date) {
+  generateBookingId(date) {
     try {
-      // Format: BK + YYYYMMDD + sequential number
+      // Format: BK + YYMMDD + 4 random uppercase alphanumeric characters
+      // This matches the format used in lengolf-forms
       const dateStr = date.replace(/-/g, '').substring(2); // Get YYMMDD
-      const prefix = `BK${dateStr}`;
-
-      // Get highest booking ID for this date
-      const { data, error } = await this.supabase
-        .from('bookings')
-        .select('id')
-        .like('id', `${prefix}%`)
-        .order('id', { ascending: false })
-        .limit(1);
-
-      if (error) {
-        throw error;
-      }
-
-      // Extract sequence number
-      let nextSeq = 1;
-      if (data && data.length > 0) {
-        const match = data[0].id.match(/BK\d{6}(\d+)/);
-        if (match) {
-          nextSeq = parseInt(match[1], 10) + 1;
-        }
-      }
-
-      // Format: BK20251201001, BK20251201002, etc.
-      const bookingId = `${prefix}${String(nextSeq).padStart(3, '0')}`;
+      const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const bookingId = `BK${dateStr}${randomSuffix}`;
 
       log('DEBUG', 'Generated booking ID', { bookingId, date });
       return bookingId;
@@ -378,7 +356,7 @@ class BookingService {
       }
 
       // Generate booking ID
-      const bookingId = await this.generateBookingId(date);
+      const bookingId = this.generateBookingId(date);
 
       // Create booking record
       const newBooking = {
