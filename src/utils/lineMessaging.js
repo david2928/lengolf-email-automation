@@ -25,8 +25,8 @@ class LineMessagingService {
         'Authorization': `Bearer ${channelAccessToken}`,
         'Content-Type': 'application/json'
       },
-      // Add timeout to prevent hanging requests
-      timeout: 10000
+      // Add timeout to prevent hanging requests (increased to 30s for LINE API)
+      timeout: 30000
     });
 
     // Log initialization
