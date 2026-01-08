@@ -53,8 +53,16 @@ class ClassPassProcessor {
                             /cancelled by user/i.test(subject) ||
                             (/cancel/i.test(subject) && !/received/i.test(subject));
 
-      // Extract date and time: "at LenGolf January 15, 2025 @ 2:00 PM"
-      const dateTimeMatch = bodyText.match(/at LenGolf\s*(\w+ \d{1,2}, \d{4})\s*@\s*(\d{1,2}:\d{2}\s*[APM]{2})/i);
+      // Extract date and time - support both old and new formats:
+      // Old format: "at LenGolf January 15, 2025 @ 2:00 PM"
+      // New format: "Date and time\nJan 11, 2026 @\n11:00 AM"
+      let dateTimeMatch = bodyText.match(/at LenGolf\s*(\w+ \d{1,2}, \d{4})\s*@\s*(\d{1,2}:\d{2}\s*[APM]{2})/i);
+
+      // Try new format if old format didn't match
+      if (!dateTimeMatch) {
+        dateTimeMatch = bodyText.match(/Date\s+and\s+time\s*(\w+\s+\d{1,2},?\s+\d{4})\s*@?\s*(\d{1,2}:\d{2}\s*[APM]{2})/i);
+      }
+
       if (!dateTimeMatch) {
         log('WARN', 'Could not extract date/time from ClassPass email', {
           subject,
@@ -65,8 +73,22 @@ class ClassPassProcessor {
 
       const [, reservationDate, reservationTime] = dateTimeMatch;
 
-      // Extract customer name: "Reservation made by: Name: John Doe"
-      const nameMatch = bodyText.match(/(?:Reservation made by:|Name:)\s*(?:Name:)?\s*([^\r\n]+?)(?:\s+Email:|$)/i);
+      // Extract customer name - support both old and new formats:
+      // Old format: "Reservation made by: Name: John Doe"
+      // New format: "Member information\n효빈\n이\n\nadelbin@naver.com"
+      let nameMatch = bodyText.match(/(?:Reservation made by:|Name:)\s*(?:Name:)?\s*([^\r\n]+?)(?:\s+Email:|$)/i);
+
+      // Try new format if old format didn't match
+      if (!nameMatch) {
+        // Match everything after "Member information" until we hit an email
+        const memberInfoMatch = bodyText.match(/Member\s+information\s*([\s\S]+?)(?=\s*[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+        if (memberInfoMatch) {
+          // Clean up the name - remove extra whitespace/newlines
+          const cleanedName = memberInfoMatch[1].replace(/\s+/g, ' ').trim();
+          nameMatch = [null, cleanedName];
+        }
+      }
+
       if (!nameMatch) {
         log('WARN', 'Could not extract customer name from ClassPass email');
         return null;
@@ -74,16 +96,33 @@ class ClassPassProcessor {
 
       const customerName = nameMatch[1].trim();
 
-      // Extract email: "Email: john@example.com"
-      const emailMatch = bodyText.match(/Email:\s*([^\s\r\n]+@[^\s\r\n]+)/i);
+      // Extract email - support both old and new formats:
+      // Old format: "Email: john@example.com"
+      // New format: Email appears directly without label
+      let emailMatch = bodyText.match(/Email:\s*([^\s\r\n]+@[^\s\r\n]+)/i);
+
+      // Try direct email detection if label not found
+      if (!emailMatch) {
+        // Look for any email address in the body
+        emailMatch = bodyText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+      }
+
       const customerEmail = emailMatch ? emailMatch[1].trim() : null;
 
       // Extract phone (if available): "Phone: +66 12 345 6789" or "Phone: 0812345678"
       const phoneMatch = bodyText.match(/Phone:\s*(\+?[\d\s-]+)/i);
       const customerPhone = phoneMatch ? phoneMatch[1].trim() : null;
 
-      // Extract reservation key/ID: "Reservation ID: ABC123" or "Booking ID: XYZ789"
-      const reservationKeyMatch = bodyText.match(/(?:Reservation|Booking)\s+(?:ID|Key|#):\s*([A-Z0-9-]+)/i);
+      // Extract reservation key/ID - support both old and new formats:
+      // Old format: "Reservation ID: ABC123" or "Booking ID: XYZ789"
+      // New format: "Reservation\nID\n\n#380460658"
+      let reservationKeyMatch = bodyText.match(/(?:Reservation|Booking)\s+(?:ID|Key|#):\s*([A-Z0-9-]+)/i);
+
+      // Try new format with newlines and # prefix
+      if (!reservationKeyMatch) {
+        reservationKeyMatch = bodyText.match(/Reservation\s+ID\s*#?(\d+)/i);
+      }
+
       const reservationKey = reservationKeyMatch ? reservationKeyMatch[1].trim() : null;
 
       // Extract number of people (ClassPass typically 1 person, but check)
