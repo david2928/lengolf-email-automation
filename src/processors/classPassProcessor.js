@@ -4,6 +4,7 @@ const { CustomerService } = require('../services/customerService');
 const { BookingService } = require('../services/bookingService');
 const { extractPlainText, formatDate } = require('../utils/emailUtils');
 const { log } = require('../utils/logging');
+const { isTransientError } = require('../utils/errorUtils');
 
 /**
  * ClassPassProcessor - Processes ClassPass booking and cancellation emails
@@ -309,7 +310,20 @@ class ClassPassProcessor {
         stack: error.stack
       });
 
-      // Track email as processed with error
+      // Only mark as processed for permanent errors
+      // Transient errors (network issues, timeouts) should be retried on next cycle
+      if (isTransientError(error)) {
+        log('WARN', 'Transient error encountered, will retry on next cycle', {
+          gmailMessageId,
+          customerName: details.customerName,
+          error: error.message
+        });
+        // Don't mark as processed - let it retry on next cycle
+        // Re-throw to prevent moving thread to completed
+        throw error;
+      }
+
+      // Track email as processed with error (permanent errors only)
       await this.emailTracking.markProcessed(
         gmailMessageId,
         'classpass',
@@ -426,7 +440,20 @@ class ClassPassProcessor {
         stack: error.stack
       });
 
-      // Track email as processed with error
+      // Only mark as processed for permanent errors
+      // Transient errors (network issues, timeouts) should be retried on next cycle
+      if (isTransientError(error)) {
+        log('WARN', 'Transient error encountered, will retry on next cycle', {
+          gmailMessageId,
+          customerName: details.customerName,
+          error: error.message
+        });
+        // Don't mark as processed - let it retry on next cycle
+        // Re-throw to prevent moving thread to completed
+        throw error;
+      }
+
+      // Track email as processed with error (permanent errors only)
       await this.emailTracking.markProcessed(
         gmailMessageId,
         'classpass',
