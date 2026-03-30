@@ -224,10 +224,14 @@ class WebResosProcessor {
         email: bookingData.customerEmail
       }, false); // No fuzzy matching for ResOS
 
+      // Check booking history - even if customer record exists, treat as new if no prior bookings
+      const isNewCustomer = isNew || !(await this.bookingService.hasBookingHistory(customer.id));
+
       log('INFO', isNew ? 'Created new customer' : 'Matched existing customer', {
         customerId: customer.id,
         customerCode: customer.customer_code,
-        customerName: customer.customer_name
+        customerName: customer.customer_name,
+        isNewCustomer
       });
 
       // Step 2: Convert start time to HH:mm format (24-hour)
@@ -284,7 +288,8 @@ class WebResosProcessor {
         numberOfPeople: bookingData.numberOfPeople,
         bay,
         customerContactedVia: 'ResOS',
-        customerNotes: 'Booking created automatically from ResOS email. Please confirm with customer.'
+        customerNotes: 'Booking created automatically from ResOS email. Please confirm with customer.',
+        isNewCustomer
       });
 
       log('INFO', 'ResOS booking created successfully', {
@@ -305,6 +310,7 @@ class WebResosProcessor {
         bay: booking.bay,
         numberOfPeople: booking.number_of_people,
         channel: 'ResOS',
+        isNewCustomer,
         notes: 'Booking created automatically. Please call customer to confirm.'
       });
 

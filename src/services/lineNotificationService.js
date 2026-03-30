@@ -121,6 +121,7 @@ class LineNotificationService {
       bay,
       numberOfPeople,
       channel,
+      isNewCustomer,
       notes
     } = bookingData;
 
@@ -130,9 +131,10 @@ class LineNotificationService {
     const formattedEndTime = this.calculateEndTime(startTime, duration);
 
     // Build notification message (matches lengolf-forms format)
+    const customerNameDisplay = isNewCustomer ? `${customerName} (New Customer)` : customerName;
     let message = `Booking Notification (ID: ${bookingId})\n`;
-    message += `Customer Name: ${customerName}\n`;
-    message += `Booking Name: ${customerName}\n`;
+    message += `Customer Name: ${customerNameDisplay}\n`;
+    message += `Booking Name: ${customerNameDisplay}\n`;
 
     if (customerEmail) {
       message += `Email: ${customerEmail}\n`;

@@ -315,7 +315,8 @@ class BookingService {
         customerContactedVia,
         reservationKey = null,
         customerNotes = null,
-        userId = null
+        userId = null,
+        isNewCustomer = false
       } = bookingData;
 
       // Validate required fields
@@ -379,6 +380,7 @@ class BookingService {
         customer_contacted_via: customerContactedVia || 'Email Automation',
         reservation_key: reservationKey,
         customer_notes: customerNotes,
+        is_new_customer: Boolean(isNewCustomer),
         updated_by_type: 'system',
         updated_by_identifier: 'Email Automation'
       };
@@ -462,6 +464,37 @@ class BookingService {
         error: error.message
       });
       throw error;
+    }
+  }
+
+  /**
+   * Check if a customer has any prior non-cancelled bookings
+   * @param {string} customerId - Customer ID
+   * @returns {Promise<boolean>} - True if customer has booking history
+   */
+  async hasBookingHistory(customerId) {
+    try {
+      const { count, error } = await this.supabase
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('customer_id', customerId)
+        .neq('status', 'cancelled');
+
+      if (error) {
+        log('WARN', 'Failed to check booking history, defaulting to existing customer', {
+          customerId,
+          error: error.message
+        });
+        return true; // fail-closed: assume existing customer on error
+      }
+
+      return count > 0;
+    } catch (error) {
+      log('WARN', 'Error checking booking history', {
+        customerId,
+        error: error.message
+      });
+      return true;
     }
   }
 

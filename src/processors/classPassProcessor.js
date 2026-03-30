@@ -204,10 +204,14 @@ class ClassPassProcessor {
         email: details.customerEmail
       }, true); // Allow fuzzy name matching
 
+      // Check booking history - even if customer record exists, treat as new if no prior bookings
+      const isNewCustomer = isNew || !(await this.bookingService.hasBookingHistory(customer.id));
+
       log('INFO', isNew ? 'Created new customer' : 'Matched existing customer', {
         customerId: customer.id,
         customerCode: customer.customer_code,
-        customerName: customer.customer_name
+        customerName: customer.customer_name,
+        isNewCustomer
       });
 
       // Step 2: Convert start time to HH:mm format (24-hour)
@@ -265,7 +269,8 @@ class ClassPassProcessor {
         bay,
         customerContactedVia: 'ClassPass',
         reservationKey: details.reservationKey,
-        customerNotes: 'Booking created automatically from ClassPass email. No payment required at location.'
+        customerNotes: 'Booking created automatically from ClassPass email. No payment required at location.',
+        isNewCustomer
       });
 
       log('INFO', 'ClassPass booking created successfully', {
@@ -286,6 +291,7 @@ class ClassPassProcessor {
         bay: booking.bay,
         numberOfPeople: booking.number_of_people,
         channel: 'ClassPass',
+        isNewCustomer,
         notes: 'Booking created automatically. ClassPass booking, no payment required at the location.'
       });
 
