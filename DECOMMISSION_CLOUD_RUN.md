@@ -1,9 +1,21 @@
 # Cloud Run Decommission Plan (email-processor)
 
-Status: **PENDING — do not execute without David's confirmation.**
+Status: **EXECUTED 2026-07-10 (steps 2–3, approved by David).**
 Created 2026-07-10 as part of the migration to the Supabase Edge Function
 (`supabase/functions/email-processor/`, project `bisimqmtxjsptehhqpeg`,
 pg_cron job `email-processor`, every 5 minutes).
+
+Executed on 2026-07-10 after David's approval:
+- Cloud Run `email-processor` scaled to zero via **manual scaling**
+  (`gcloud run services update ... --scaling=0`; note `--max-instances=0` is
+  rejected — Cloud Run requires a positive integer for autoscaling maxScale).
+  Service state: `run.googleapis.com/scalingMode: manual`,
+  `manualInstanceCount: '0'` — no instance can start regardless of traffic.
+- Cloud Scheduler job `email-processor` (asia-southeast1) **deleted**.
+
+Still pending (step 4): delete the Cloud Run service entirely after ~30 days
+of clean edge-function operation (around 2026-08-10). Secret Manager secrets
+`gmail-credentials`/`gmail-token` are intentionally kept (step 5).
 
 ## Why decommission
 
