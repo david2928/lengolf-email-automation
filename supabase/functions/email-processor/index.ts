@@ -41,11 +41,24 @@ function jsonResponse(body: Record<string, unknown>, status = 200): Response {
   });
 }
 
+// Compare via SHA-256 digests so the string comparison's timing reveals
+// nothing about the secret itself.
+async function secretMatches(provided: string | null, expected: string): Promise<boolean> {
+  if (!provided) return false;
+  const digest = async (s: string) =>
+    new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)));
+  const a = await digest(provided);
+  const b = await digest(expected);
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
 Deno.serve(async (req: Request) => {
   // Shared-secret check on top of the platform JWT verification, so holders
   // of the public anon key cannot trigger processing cycles.
   const secret = requiredEnv('EMAIL_PROCESSOR_SECRET');
-  if (req.headers.get('x-processor-secret') !== secret) {
+  if (!(await secretMatches(req.headers.get('x-processor-secret'), secret))) {
     return jsonResponse({ error: 'unauthorized' }, 401);
   }
 

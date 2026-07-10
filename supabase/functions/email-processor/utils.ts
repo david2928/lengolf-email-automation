@@ -39,11 +39,15 @@ const TRANSIENT_ERROR_PATTERNS = [
   'service unavailable', '503', '502', '504', 'bad gateway', 'gateway timeout',
   'rate limit', 'too many requests', '429',
   'temporary failure', 'try again', 'temporarily unavailable',
+  // Deno fetch rejects with TypeError messages shaped differently from
+  // Node/undici — connection-level failures must still classify as transient.
+  'error sending request', 'client error (connect', 'connection closed',
+  'connection reset', 'connection refused', 'dns error',
 ];
 
 export function isTransientError(error: unknown): boolean {
   if (!error) return false;
-  const err = error as { message?: string; code?: string; name?: string };
+  const err = error as { message?: string; code?: string; name?: string; cause?: unknown };
   const message = (typeof error === 'string' ? error : err.message || '').toLowerCase();
   const code = (err.code || '').toLowerCase();
   const name = (err.name || '').toLowerCase();
@@ -52,6 +56,8 @@ export function isTransientError(error: unknown): boolean {
   }
   if (name === 'typeerror' && message.includes('fetch')) return true;
   if (name === 'aborterror' || name === 'timeouterror') return true;
+  // Wrapped errors (service layer throws plain Errors) keep the original as cause.
+  if (typeof error === 'object' && err.cause) return isTransientError(err.cause);
   return false;
 }
 

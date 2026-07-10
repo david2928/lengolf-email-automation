@@ -35,7 +35,7 @@ export class CustomerService {
       .eq('normalized_phone', normalizedPhone)
       .eq('is_active', true)
       .limit(1);
-    if (error) throw new Error(`findByPhone failed: ${error.message}`);
+    if (error) throw new Error(`findByPhone failed: ${error.message}`, { cause: error });
     return data && data.length > 0 ? data[0] : null;
   }
 
@@ -47,7 +47,7 @@ export class CustomerService {
       .ilike('email', email)
       .eq('is_active', true)
       .limit(1);
-    if (error) throw new Error(`findByEmail failed: ${error.message}`);
+    if (error) throw new Error(`findByEmail failed: ${error.message}`, { cause: error });
     return data && data.length > 0 ? data[0] : null;
   }
 
@@ -57,7 +57,7 @@ export class CustomerService {
       search_name: name,
       min_similarity: threshold,
     });
-    if (error) throw new Error(`findByFuzzyName failed: ${error.message}`);
+    if (error) throw new Error(`findByFuzzyName failed: ${error.message}`, { cause: error });
     if (data && data.length === 1 && data[0].similarity >= threshold) {
       return data[0];
     }
@@ -118,7 +118,7 @@ export class CustomerService {
       if (error.code === '23505' && error.message.includes('normalized_phone')) {
         throw new Error('DUPLICATE_PHONE');
       }
-      throw new Error(`createCustomer failed: ${error.message}`);
+      throw new Error(`createCustomer failed: ${error.message}`, { cause: error });
     }
 
     log('INFO', 'Customer created', {
@@ -172,7 +172,7 @@ export class BookingService {
       .eq('bay', bay)
       .eq('date', date)
       .eq('status', 'confirmed');
-    if (error) throw new Error(`isBayAvailable query failed: ${error.message}`);
+    if (error) throw new Error(`isBayAvailable query failed: ${error.message}`, { cause: error });
 
     for (const booking of data || []) {
       const existingStart = booking.start_time.slice(0, 5);
@@ -297,7 +297,7 @@ export class BookingService {
       .insert(newBooking)
       .select()
       .single();
-    if (error) throw new Error(`createBooking failed: ${error.message}`);
+    if (error) throw new Error(`createBooking failed: ${error.message}`, { cause: error });
 
     log('INFO', 'Booking created', {
       bookingId: data.id,
@@ -320,7 +320,7 @@ export class BookingService {
       .eq('id', bookingId)
       .select()
       .single();
-    if (error) throw new Error(`cancelBooking failed: ${error.message}`);
+    if (error) throw new Error(`cancelBooking failed: ${error.message}`, { cause: error });
     log('INFO', 'Booking cancelled', { bookingId, reason });
     return data;
   }
@@ -333,7 +333,7 @@ export class BookingService {
       .eq('status', 'confirmed')
       .order('created_at', { ascending: false })
       .limit(1);
-    if (error) throw new Error(`findBookingByReservationKey failed: ${error.message}`);
+    if (error) throw new Error(`findBookingByReservationKey failed: ${error.message}`, { cause: error });
     return data && data.length > 0 ? data[0] : null;
   }
 
@@ -356,7 +356,7 @@ export class BookingService {
     if (source) query = query.eq('customer_contacted_via', source);
 
     const { data, error } = await query;
-    if (error) throw new Error(`findBookingByDetails failed: ${error.message}`);
+    if (error) throw new Error(`findBookingByDetails failed: ${error.message}`, { cause: error });
     if (!data || data.length === 0) return null;
 
     const matches = data.filter((booking: Row) => {
@@ -395,7 +395,7 @@ export class EmailTrackingService {
       .select('id')
       .eq('gmail_message_id', gmailMessageId)
       .limit(1);
-    if (error) throw new Error(`isProcessed check failed: ${error.message}`);
+    if (error) throw new Error(`isProcessed check failed: ${error.message}`, { cause: error });
     return !!data && data.length > 0;
   }
 
@@ -431,7 +431,7 @@ export class EmailTrackingService {
         log('WARN', 'Email already marked as processed (duplicate)', { gmailMessageId, actionTaken });
         return;
       }
-      throw new Error(`markProcessed failed: ${error.message}`);
+      throw new Error(`markProcessed failed: ${error.message}`, { cause: error });
     }
     log('INFO', 'Email marked as processed', { gmailMessageId, sourceType, actionTaken, bookingId });
   }

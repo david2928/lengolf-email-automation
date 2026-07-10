@@ -116,7 +116,17 @@ abstract class BaseProcessor {
       const subject = this.gmail.getHeader(message, 'subject');
       const emailMetadata = { subject, date: this.gmail.getHeader(message, 'date') };
 
-      const details = this.extractDetails(bodyText, subject);
+      // Extraction must never throw (a malformed email would otherwise become a
+      // poison thread retried every cycle) — match the Node try/catch-to-null.
+      let details: ReservationDetails | null = null;
+      try {
+        details = this.extractDetails(bodyText, subject);
+      } catch (extractError) {
+        log('ERROR', `Extraction threw for ${this.sourceType} email`, {
+          messageId: message.id,
+          error: (extractError as Error).message,
+        });
+      }
       if (!details) {
         stats.extractionFailures++;
         log('WARN', `Could not extract details from ${this.sourceType} email`, {
@@ -467,7 +477,10 @@ export class WebResosProcessor extends BaseProcessor {
     const [sh, sm] = start24.split(':').map(Number);
     const [eh, em] = end24.split(':').map(Number);
     let duration = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
-    if (duration <= 0) duration = 1; // matches Node fallback for unparseable/invalid ranges
+    // Deviation from Node: overnight ranges (e.g. 23:00 - 00:30) produced a
+    // negative duration there; zero-length ranges failed validation. Clamp
+    // both to 1 hour so the booking is still created and staff can adjust.
+    if (duration <= 0) duration = 1;
 
     return {
       isCancellation,

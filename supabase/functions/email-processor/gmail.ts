@@ -116,6 +116,8 @@ export class GmailClient {
     return '';
   }
 
+  // Deviation from the Node version: searches MIME parts recursively, so
+  // nested multipart/alternative bodies (which Node returned as '') are found.
   private findPart(part: GmailPart, mimeType: string): string | null {
     if (part.mimeType === mimeType && part.body?.data) {
       return this.decodeBase64Url(part.body.data);

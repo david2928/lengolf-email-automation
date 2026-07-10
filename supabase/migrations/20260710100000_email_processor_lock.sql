@@ -21,7 +21,7 @@ CREATE OR REPLACE FUNCTION public.acquire_automation_lock(p_name TEXT, p_lease_s
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_acquired BOOLEAN := FALSE;
@@ -41,7 +41,7 @@ CREATE OR REPLACE FUNCTION public.release_automation_lock(p_name TEXT)
 RETURNS VOID
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   UPDATE public.automation_locks
   SET locked_until = now(), updated_at = now()
