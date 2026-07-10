@@ -2,6 +2,29 @@
 
 Automated email processing and lead management system for LENGOLF.
 
+> **⚠️ Architecture migrated (2026-07-10):** ClassPass/ResOS booking automation now
+> runs as a **Supabase Edge Function** (`supabase/functions/email-processor/`) in the
+> lengolf-forms Supabase project (`bisimqmtxjsptehhqpeg`), scheduled by pg_cron every
+> 5 minutes. The Cloud Run service (`email-processor`, asia-southeast1) and its Node
+> processing loop in `src/app.js` are **deprecated** — the in-process loop silently
+> deadlocked under Cloud Run CPU throttling (incident 2026-07-01 → 2026-07-10).
+> The Node code in `src/` remains as reference and for the one-off scripts.
+> See `supabase/functions/email-processor/index.ts` and
+> `supabase/migrations/20260710*` for the current architecture.
+
+## Edge Function (current architecture)
+
+- One processing cycle per invocation — no loops; pg_cron + pg_net POST to the
+  function every 5 minutes (job `email-processor`).
+- Gmail via REST + stored OAuth refresh token; LINE via Messaging API; every
+  outbound HTTP call has a timeout.
+- Concurrency-safe: lease lock (`public.automation_locks`) around each cycle plus
+  the unique constraint on `processed_emails.gmail_message_id`.
+- Secrets live in Supabase edge function secrets (`GMAIL_*`, `LINE_*`, `LABEL_*`,
+  `EMAIL_PROCESSOR_SECRET`); requests must carry the `x-processor-secret` header.
+- Deploy: `npx supabase functions deploy email-processor --project-ref bisimqmtxjsptehhqpeg --use-api`
+  (requires `SUPABASE_ACCESS_TOKEN`).
+
 ## Features
 
 - Multi-source lead processing:

@@ -40,3 +40,5 @@ npm-debug.log*
 .project
 .classpath
 .settings/
+# MCP config contains a Supabase access token - keep local only
+.mcp.json

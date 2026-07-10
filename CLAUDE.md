@@ -1,6 +1,40 @@
-p# CLAUDE.md
+# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## CURRENT ARCHITECTURE (since 2026-07-10): Supabase Edge Function
+
+The ClassPass/ResOS booking automation runs as a Supabase Edge Function at
+`supabase/functions/email-processor/` (Deno), deployed to the **lengolf-forms**
+Supabase project (`bisimqmtxjsptehhqpeg`) and triggered by **pg_cron job
+`email-processor`** (every 5 minutes via `net.http_post`). Key facts:
+
+- One processing cycle per invocation, request-driven. The old Cloud Run
+  service + in-process loop (`src/app.js`) is deprecated: CPU throttling froze
+  its loop mid-Gmail-call with no timeout (outage 2026-07-01 → 2026-07-10).
+- Concurrency: `public.acquire_automation_lock('email-processor', 600)` lease
+  lock guards the cycle (see `supabase/migrations/20260710100000_*.sql`);
+  `processed_emails.gmail_message_id` is UNIQUE as the dedup backstop.
+- Gmail access = plain fetch against the Gmail REST API with a stored OAuth
+  refresh token (edge secrets `GMAIL_CLIENT_ID/SECRET/REFRESH_TOKEN`); the
+  googleapis Node SDK is NOT used in the edge function.
+- All outbound HTTP calls have explicit timeouts (`AbortSignal.timeout`).
+- Date parsing is deterministic month-name parsing (`parseMonthNameDate`) —
+  NEVER `new Date(x).toISOString()` on locally-parsed dates (that shifted
+  bookings -1 day in non-UTC timezones).
+- Auth: platform JWT (anon key) + `x-processor-secret` header checked in the
+  function (`EMAIL_PROCESSOR_SECRET` edge secret; also embedded in the cron
+  job command, so it is recoverable from `cron.job`).
+- Cron template: `supabase/migrations/20260710110000_email_processor_cron.sql`
+  (placeholders — the applied job has real values).
+- Deploy: `npx supabase functions deploy email-processor
+  --project-ref bisimqmtxjsptehhqpeg --use-api` with `SUPABASE_ACCESS_TOKEN` set.
+- Facebook Lead Ads code in `src/processors/facebookProcessor.js` is dead
+  (not wired into any runtime); it was NOT migrated.
+
+The `src/` Node code below remains for reference and one-off scripts. The
+sections that describe the Express server / processing loop reflect the
+deprecated Cloud Run deployment.
 
 ## Common Commands
 
