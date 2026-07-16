@@ -1,5 +1,6 @@
 // LINE Messaging API notifications, ported from src/services/lineNotificationService.js
-// and src/utils/lineMessaging.js. Message formats are preserved verbatim.
+// and src/utils/lineMessaging.js. Message formats are preserved verbatim, except the
+// no-slots message now appends the customer email when present (ClassPass sends no phone).
 // Deviation from the Node version: no separate /info token-validation call before
 // each push — the push itself surfaces auth errors, and one fewer network call
 // per notification keeps cycles short.
@@ -118,9 +119,12 @@ export class LineNotifier {
     const startTime = b.startTime.slice(0, 5);
     const endTime = calculateEndTime24(startTime, b.duration);
 
+    const contact = b.customerEmail
+      ? `${b.customerPhone}, ${b.customerEmail}`
+      : b.customerPhone;
     const message = `[New ${b.channel} Booking] ` +
       `Customer ${b.customerName} ` +
-      `(${b.customerPhone}), ` +
+      `(${contact}), ` +
       `${b.numberOfPeople} PAX on ` +
       `${formattedDate} from ` +
       `${startTime} - ${endTime}. ` +

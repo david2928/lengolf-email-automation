@@ -181,6 +181,7 @@ abstract class BaseProcessor {
         await this.line.sendNoSlotsAvailable({
           customerName: details.customerName,
           customerPhone: details.customerPhone || 'N/A',
+          customerEmail: details.customerEmail,
           date: details.date,
           startTime: startTime24h,
           duration: details.duration,
